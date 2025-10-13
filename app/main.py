@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import tasks
 from app.database.db import Base, engine
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="MasterTask API")
 
@@ -16,6 +17,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 async def root():
