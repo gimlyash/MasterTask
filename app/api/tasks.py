@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime, timezone
 from app.models.task import Task, PriorityEnum, StatusEnum
 from app.database.db import get_db
@@ -43,8 +43,7 @@ class TaskResponse(BaseModel):
     updated_at: datetime
     completed_at: datetime | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.post("/", response_model=TaskResponse)
 async def create_task(task: TaskCreate, user_id: int = 1, db:

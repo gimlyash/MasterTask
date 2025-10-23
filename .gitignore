@@ -1,0 +1,5 @@
+pycache/ *.py[cod] *$py.class *.so .Python build/ dist/ *.egg-info/ *.egg pip-wheel-metadata/ *.whl *.dist-info/
+venv/ .env env/ *.venv *.env
+site-packages/
+node_modules/ dist/ build/ *.min.js.map *.min.css.map
+*.db *.sqlite
