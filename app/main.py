@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import tasks, users, categories, tags, task_tags, notifications, analytics_logs
 from app.database.db import Base, engine
-from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title= "MasterTask API",
@@ -12,7 +11,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +27,9 @@ app.include_router(task_tags.router, prefix="/task-tags", tags=["task_tags"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(analytics_logs.router, prefix="/analytics-logs", tags=["analytics_logs"])
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+@app.get("/api/hello")
+def hello():
+    return {"message": "Привет от FastAPI!"}
 
 @app.get("/", tags=["root"])
 async def root():
