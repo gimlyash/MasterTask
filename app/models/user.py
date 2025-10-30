@@ -1,11 +1,11 @@
 from sqlalchemy import Column, Integer, String, DateTime, JSON
-from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
-
-Base = declarative_base()
+from app.database.db import Base
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
+
     user_id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -13,3 +13,4 @@ class User(Base):
     last_login = Column(DateTime)
     preferences = Column(JSON)
     
+    tasks = relationship("Task", back_populates="user")

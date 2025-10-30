@@ -1,14 +1,13 @@
 from sqlalchemy import Column, Integer, String, Boolean, Enum, DateTime, ForeignKey, Text
-from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
 import enum
-
-Base = declarative_base()
+from app.database.db import Base
+from sqlalchemy.orm import relationship
 
 class StatusEnum(str, enum.Enum):
     active = "active"
     in_progress = "in_progress"
-    comleted = "completed"
+    completed = "completed"
     overdue = "overdue"
 
 class PriorityEnum(str, enum.Enum):
@@ -32,3 +31,7 @@ class Task(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=datetime.now(timezone.utc))
     completed_at = Column(DateTime)
+
+    user = relationship("User", back_populates="tasks")
+    category = relationship("Category", back_populates="tasks")
+    tags = relationship("TaskTag", back_populates="task")

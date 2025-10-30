@@ -1,7 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import tasks, users, categories, tags, task_tags, notifications, analytics_logs
 from app.database.db import Base, engine
+
+from app.models.user import User 
+from app.models.category import Category   
+from app.models.task import Task       
+from app.models.tag import Tag
+from app.models.task_tag import TaskTag
+from app.models.analytics_log import AnalyticsLog
+from app.models.notification import Notification
+
+from app.api import tasks, users, categories, tags, task_tags, notifications, analytics_logs
 
 app = FastAPI(
     title= "MasterTask API",

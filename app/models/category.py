@@ -1,8 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
-
-Base = declarative_base()
+from app.database.db import Base
+from sqlalchemy.orm import relationship
 
 class Category(Base):
     __tablename__ = "categories"
@@ -11,3 +10,5 @@ class Category(Base):
     name = Column(String, nullable=False)
     color = Column(String)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    
+    tasks = relationship("Task", back_populates="category")

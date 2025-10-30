@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from app.models.task_tag import TaskTag
 from app.database.db import get_db
 
@@ -10,8 +10,7 @@ class TaskTagResponse(BaseModel):
     task_id: int
     tag_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=list[TaskTagResponse])
 async def get_task_tags(db: Session = Depends(get_db)):

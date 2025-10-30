@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models.analytics_log import AnalyticsLog, ActionEnum
 from app.database.db import get_db
@@ -15,8 +15,7 @@ class AnalyticsLogResponse(BaseModel):
     timestamp: datetime
     details: dict | None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=list[AnalyticsLogResponse])
 async def get_analytics_logs(db: Session = Depends(get_db)):

@@ -30,6 +30,7 @@ class TaskUpdate(BaseModel):
 
 class TaskResponse(BaseModel):
     task_id: int
+    user_id: int
     title: str
     description: str | None
     category_id: int | None

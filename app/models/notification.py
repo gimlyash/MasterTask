@@ -1,9 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum
-from sqlalchemy.orm import declarative_base
 from datetime import datetime, timezone
 import enum
-
-Base = declarative_base()
+from app.database.db import Base
 
 class NotificationTypeEnum(str, enum.Enum):
     overdue = "overdue"

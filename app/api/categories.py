@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models.category import Category
 from app.database.db import get_db
@@ -23,8 +23,7 @@ class CategoryResponse(BaseModel):
     color: str | None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.post("/", response_model=CategoryResponse)
 async def create_category(category: CategoryCreate, db: Session = Depends(get_db)):
