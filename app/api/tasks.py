@@ -54,11 +54,11 @@ async def create_task(task: TaskCreate, user_id: int = 1, db:
         title=task.title,
         description=task.description,
         category_id=task.category_id,
-        priority=task.priority,
+        priority=task.priority.value if task.priority else None,
         deadline=task.deadline,
         is_repeating=task.is_repeating,
         repeat_interval=task.repeat_interval,
-        status=StatusEnum.active,
+        status=StatusEnum.active.value,
         is_favorite=task.is_favorite
     )
     db.add(db_task)
@@ -84,6 +84,9 @@ async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, d
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     for key, value in task_update.model_dump(exclude_unset=True).items():
+        # Преобразуем Enum в строку для сохранения в БД
+        if key in ('priority', 'status') and value is not None:
+            value = value.value if hasattr(value, 'value') else value
         setattr(task, key, value)
     task.updated_at = datetime.now(timezone.utc)
     db.commit()

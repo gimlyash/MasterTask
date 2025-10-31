@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, JSON
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime, timezone
 from app.database.db import Base
 from sqlalchemy.orm import relationship
@@ -11,6 +12,6 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     last_login = Column(DateTime)
-    preferences = Column(JSON)
+    preferences = Column(JSONB)
     
     tasks = relationship("Task", back_populates="user")

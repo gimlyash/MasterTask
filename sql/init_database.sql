@@ -64,23 +64,23 @@ CREATE TABLE analytics_logs (
     details JSONB
 );
 
-CREATE INDEX idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX idx_tasks_deadline ON tasks(deadline);
-CREATE INDEX idx_tasks_status ON tasks(status);
+    CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+    CREATE INDEX idx_tasks_deadline ON tasks(deadline);
+    CREATE INDEX idx_tasks_status ON tasks(status);
 
 CREATE OR REPLACE FUNCTION update_overdue_status()
 RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE tasks
-    SET status = 'overdue'
-    WHERE deadline < CURRENT_TIMESTAMP
-    AND status IN ('active', 'in_progress')
-    AND task_id = NEW.task_id;
+    -- Новая логика
+    IF NEW.deadline < CURRENT_TIMESTAMP 
+       AND NEW.status IN ('active', 'in_progress') THEN
+        NEW.status := 'overdue';
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER check_overdue
-AFTER INSERT OR UPDATE ON tasks
+BEFORE INSERT OR UPDATE ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION update_overdue_status();
