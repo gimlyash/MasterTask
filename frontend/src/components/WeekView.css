@@ -1,0 +1,270 @@
+.week-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.week-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.week-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.week-nav-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 7px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.week-nav-btn:hover {
+  background: #f9fafb;
+  border-color: #f87171;
+  color: #dc2626;
+}
+
+.week-today-btn {
+  padding: 5px 10px;
+  border: 1px solid #fca5a5;
+  background: white;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  color: #dc2626;
+  transition: all 0.2s;
+}
+
+.week-today-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Шкала недели */
+.week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.week-day {
+  position: relative;
+  padding: 12px 10px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  cursor: pointer;
+  background: #f9fafb;
+  text-align: center;
+  min-height: 85px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.week-day:hover {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+.week-day.today {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+.week-day.today .day-name,
+.week-day.today .day-number {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.week-day.selected {
+  border-color: #f87171;
+  background: #ffe4e6;
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.day-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.day-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.today-badge {
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-tasks-count {
+  margin-top: 8px;
+  min-height: 20px;
+}
+
+.tasks-count-badge {
+  display: inline-block;
+  background: #f87171;
+  color: white;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.week-day.today .tasks-count-badge {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.add-task-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #f87171;
+  color: white;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.2);
+}
+
+.add-task-btn:hover {
+  background: #ef4444;
+  transform: scale(1.1);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+}
+
+
+/* Секции с задачами по дням */
+.week-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.day-section {
+  background: white;
+  border-radius: 10px;
+  padding: 18px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.day-section-header {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+.day-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.today-label {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.day-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Адаптивность */
+@media (max-width: 968px) {
+  .week-header {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .week-day {
+    min-height: 80px;
+    padding: 12px 8px;
+  }
+
+  .day-number {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .week-header {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .day-task-form {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+}
+

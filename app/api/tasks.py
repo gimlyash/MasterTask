@@ -49,22 +49,41 @@ class TaskResponse(BaseModel):
 @router.post("/", response_model=TaskResponse)
 async def create_task(task: TaskCreate, user_id: int = 1, db:
                       Session = Depends(get_db)):
-    db_task = Task(
-        user_id=user_id,
-        title=task.title,
-        description=task.description,
-        category_id=task.category_id,
-        priority=task.priority.value if task.priority else None,
-        deadline=task.deadline,
-        is_repeating=task.is_repeating,
-        repeat_interval=task.repeat_interval,
-        status=StatusEnum.active.value,
-        is_favorite=task.is_favorite
-    )
-    db.add(db_task)
-    db.commit()
-    db.refresh(db_task)
-    return db_task
+    try:
+        # Проверка существования пользователя
+        from app.models.user import User
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Проверка существования категории, если указана
+        if task.category_id:
+            from app.models.category import Category
+            category = db.query(Category).filter(Category.category_id == task.category_id).first()
+            if not category:
+                raise HTTPException(status_code=404, detail="Category not found")
+        
+        db_task = Task(
+            user_id=user_id,
+            title=task.title,
+            description=task.description,
+            category_id=task.category_id,
+            priority=task.priority.value if task.priority else None,
+            deadline=task.deadline,
+            is_repeating=task.is_repeating,
+            repeat_interval=task.repeat_interval,
+            status=StatusEnum.active.value,
+            is_favorite=task.is_favorite
+        )
+        db.add(db_task)
+        db.commit()
+        db.refresh(db_task)
+        return db_task
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error creating task: {str(e)}")
 
 @router.get("/", response_model=list[TaskResponse])
 async def get_tasks(user_id: int = 1, db: Session = Depends(get_db)):
@@ -80,24 +99,44 @@ async def get_task(task_id: int, user_id: int = 1, db: Session = Depends(get_db)
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.task_id == task_id, Task.user_id == user_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    for key, value in task_update.model_dump(exclude_unset=True).items():
-        # Преобразуем Enum в строку для сохранения в БД
-        if key in ('priority', 'status') and value is not None:
-            value = value.value if hasattr(value, 'value') else value
-        setattr(task, key, value)
-    task.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(task)
-    return task
+    try:
+        task = db.query(Task).filter(Task.task_id == task_id, Task.user_id == user_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Проверка существования категории, если указана
+        if task_update.category_id is not None:
+            from app.models.category import Category
+            category = db.query(Category).filter(Category.category_id == task_update.category_id).first()
+            if not category:
+                raise HTTPException(status_code=404, detail="Category not found")
+        
+        for key, value in task_update.model_dump(exclude_unset=True).items():
+            # Преобразуем Enum в строку для сохранения в БД
+            if key in ('priority', 'status') and value is not None:
+                value = value.value if hasattr(value, 'value') else value
+            setattr(task, key, value)
+        task.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(task)
+        return task
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating task: {str(e)}")
 
 @router.delete("/{task_id}")
 async def delete_task(task_id: int, user_id: int = 1, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.task_id == task_id, Task.user_id == user_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    db.delete(task)
-    db.commit()
-    return {"message": "Task deleted"}
+    try:
+        task = db.query(Task).filter(Task.task_id == task_id, Task.user_id == user_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        db.delete(task)
+        db.commit()
+        return {"message": "Task deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error deleting task: {str(e)}")

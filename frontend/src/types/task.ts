@@ -23,6 +23,7 @@ export interface CreateTaskData {
   priority?: Priority;
   deadline?: string;
   is_repeating?: boolean;
+  repeat_interval?: string;
   is_favorite?: boolean;
 }
 

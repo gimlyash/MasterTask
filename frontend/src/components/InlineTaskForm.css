@@ -1,0 +1,249 @@
+.inbox-expanded-form {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin: 0;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  overflow: hidden;
+}
+
+.inbox-expanded-form form {
+  padding: 16px;
+}
+
+.expanded-form-header {
+  margin-bottom: 12px;
+}
+
+.expanded-title-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+  padding: 0;
+  background: transparent;
+}
+
+.expanded-title-input::placeholder {
+  color: #9ca3af;
+}
+
+.expanded-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.expanded-description-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #1f2937;
+  padding: 8px 0;
+  background: transparent;
+  resize: none;
+  font-family: inherit;
+}
+
+.expanded-description-input::placeholder {
+  color: #9ca3af;
+}
+
+.expanded-form-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.expanded-form-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.expanded-form-btn:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #1f2937;
+}
+
+.expanded-form-btn svg {
+  flex-shrink: 0;
+}
+
+.deadline-value,
+.priority-value {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.expanded-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
+  margin-top: 8px;
+}
+
+.expanded-category-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.expanded-category-btn:hover {
+  background: #f9fafb;
+}
+
+.expanded-category-btn svg {
+  flex-shrink: 0;
+}
+
+.expanded-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.expanded-form-actions .btn-primary,
+.expanded-form-actions .btn-secondary {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.expanded-form-actions .btn-primary {
+  display: flex;
+  align-items: center;
+  background: #f87171;
+  color: white;
+  font-style: normal;
+}
+
+.expanded-form-actions .btn-primary:hover {
+  background: #ef4444;
+}
+
+.expanded-form-actions .btn-primary svg {
+  flex-shrink: 0;
+}
+
+.expanded-form-actions .btn-primary span {
+  font-style: normal;
+}
+
+.expanded-form-actions .btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.expanded-form-actions .btn-secondary:hover {
+  background: #e5e7eb;
+}
+
+/* Calendar picker styles */
+.calendar-picker {
+  position: fixed;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  z-index: 10000;
+  min-width: 280px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.calendar-nav-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.calendar-nav-btn:hover {
+  background: #f9fafb;
+}
+
+.calendar-month-year {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  padding: 4px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1f2937;
+  transition: all 0.2s;
+  padding: 4px;
+}
+
+.calendar-day:hover {
+  background: #f3f4f6;
+}
+
+.calendar-day.today {
+  background: #fee2e2;
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.calendar-day.selected {
+  background: #f87171;
+  color: white;
+  font-weight: 600;
+}
+
+.calendar-day.empty {
+  cursor: default;
+  opacity: 0;
+}
+

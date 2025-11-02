@@ -71,7 +71,6 @@ CREATE TABLE analytics_logs (
 CREATE OR REPLACE FUNCTION update_overdue_status()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Новая логика
     IF NEW.deadline < CURRENT_TIMESTAMP 
        AND NEW.status IN ('active', 'in_progress') THEN
         NEW.status := 'overdue';
