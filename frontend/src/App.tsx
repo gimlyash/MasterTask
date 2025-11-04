@@ -463,7 +463,7 @@ function App() {
           <div style={{ height: '1px', background: '#e5e7eb', margin: '8px 0' }}></div>
 
           <button 
-            className={`nav-item ${filterStatus === TaskStatus.completed ? 'active' : ''}`}
+            className={`nav-item nav-item-completed ${filterStatus === TaskStatus.completed ? 'active' : ''}`}
             onClick={() => {
               setFilterStatus(TaskStatus.completed);
               setFilterPriority(null);
@@ -481,7 +481,7 @@ function App() {
           </button>
 
           <button 
-            className={`nav-item ${filterFavorite ? 'active' : ''}`}
+            className={`nav-item nav-item-favorite ${filterFavorite ? 'active' : ''}`}
             onClick={() => {
               setFilterFavorite(true);
               setFilterStatus(null);
@@ -616,10 +616,10 @@ function App() {
               )}
               {filterStatus === TaskStatus.completed && (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#86efac' }}>
                     <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  Завершённые задачи
+                  <span className="completed-highlight" style={{ color: '#86efac' }}>Завершённые задачи</span>
                 </>
               )}
               {filterPriority === Priority.high && (
@@ -648,10 +648,10 @@ function App() {
               )}
               {filterFavorite && (
                 <>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', color: '#fbbf24' }}>
                     <path d="M12 2L14.5 9L22 9.5L16.5 14.5L18.5 22L12 18L5.5 22L7.5 14.5L2 9.5L9.5 9L12 2Z" fill="currentColor"/>
                   </svg>
-                  Избранные задачи
+                  <span className="favorite-highlight" style={{ color: '#fbbf24' }}>Избранные задачи</span>
                 </>
               )}
               {filterView === 'all' && !filterStatus && !filterPriority && !filterFavorite && (
