@@ -83,3 +83,34 @@ CREATE TRIGGER check_overdue
 BEFORE INSERT OR UPDATE ON tasks
 FOR EACH ROW
 EXECUTE FUNCTION update_overdue_status();
+
+CREATE OR REPLACE FUNCTION create_overdue_notification()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Создаем уведомление, если статус изменился на 'overdue'
+    IF NEW.status = 'overdue' AND (OLD.status IS NULL OR OLD.status != 'overdue') THEN
+        -- Проверяем, нет ли уже непрочитанного уведомления для этой задачи
+        IF NOT EXISTS (
+            SELECT 1 FROM notifications 
+            WHERE task_id = NEW.task_id 
+            AND type = 'overdue' 
+            AND is_read = FALSE
+        ) THEN
+            INSERT INTO notifications (task_id, user_id, type, message)
+            VALUES (
+                NEW.task_id,
+                NEW.user_id,
+                'overdue',
+                'Задача ''' || NEW.title || ''' просрочена'
+            );
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER create_notification_on_overdue
+AFTER INSERT OR UPDATE ON tasks
+FOR EACH ROW
+WHEN (NEW.status = 'overdue')
+EXECUTE FUNCTION create_overdue_notification();

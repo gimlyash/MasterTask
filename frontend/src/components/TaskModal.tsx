@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Priority } from '../types/enums';
 import type { CreateTaskData } from '../types/task';
+import type { DateFormat } from '../utils/dateFormat';
+import { formatDate } from '../utils/dateFormat';
 import './TaskModal.css';
 
 interface TaskModalProps {
@@ -8,38 +10,58 @@ interface TaskModalProps {
   onClose: () => void;
   onSubmit: (data: CreateTaskData) => void;
   initialDeadline?: string;
+  dateFormat?: DateFormat;
 }
 
-export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateFormat = 'DD/MM/YYYY' }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority | undefined>(undefined);
   const [deadline, setDeadline] = useState<string>(''); // YYYY-MM-DD для бэкенда
-  const [deadlineDisplay, setDeadlineDisplay] = useState<string>(''); // DD/MM/YYYY для отображения
+  const [deadlineDisplay, setDeadlineDisplay] = useState<string>(''); // Для отображения в выбранном формате
   const [showCalendar, setShowCalendar] = useState(false);
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState(false);
 
-  // Функция для конвертации YYYY-MM-DD в DD/MM/YYYY
-  const formatToDDMMYYYY = (isoDate: string): string => {
+  // Функция для конвертации YYYY-MM-DD в выбранный формат
+  const formatToDisplayFormat = useCallback((isoDate: string): string => {
     if (!isoDate) return '';
-    const [year, month, day] = isoDate.split('-');
-    return `${day}/${month}/${year}`;
-  };
+    const date = new Date(isoDate);
+    return formatDate(date, dateFormat);
+  }, [dateFormat]);
 
-  // Функция для конвертации DD/MM/YYYY в YYYY-MM-DD
-  const parseFromDDMMYYYY = (displayDate: string): string | null => {
-    if (!displayDate || displayDate.length < 10) return null;
-    const parts = displayDate.split('/');
-    if (parts.length === 3) {
-      const [day, month, year] = parts;
-      // Валидация
-      if (day.length === 2 && month.length === 2 && year.length === 4) {
-        const date = new Date(`${year}-${month}-${day}`);
-        if (!isNaN(date.getTime())) {
-          return `${year}-${month}-${day}`;
-        }
+  // Функция для парсинга даты из выбранного формата в YYYY-MM-DD
+  const parseFromDisplayFormat = (displayDate: string): string | null => {
+    if (!displayDate) return null;
+    
+    // Определяем разделители на основе формата
+    let separator = '/';
+    if (dateFormat.includes('.')) separator = '.';
+    if (dateFormat.includes('-')) separator = '-';
+    
+    const parts = displayDate.split(separator);
+    if (parts.length !== 3) return null;
+    
+    let day: string, month: string, year: string;
+    
+    // Определяем порядок в зависимости от формата
+    if (dateFormat.startsWith('DD')) {
+      // DD/MM/YYYY или DD.MM.YYYY
+      [day, month, year] = parts;
+    } else if (dateFormat.startsWith('MM')) {
+      // MM/DD/YYYY или MM.DD.YYYY
+      [month, day, year] = parts;
+    } else {
+      // YYYY-MM-DD
+      [year, month, day] = parts;
+    }
+    
+    // Валидация
+    if (day && month && year && day.length === 2 && month.length === 2 && year.length === 4) {
+      const date = new Date(`${year}-${month}-${day}`);
+      if (!isNaN(date.getTime())) {
+        return `${year}-${month}-${day}`;
       }
     }
     return null;
@@ -61,7 +83,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
         dateToSet = `${year}-${month}-${day}`;
       }
       setDeadline(dateToSet);
-      setDeadlineDisplay(formatToDDMMYYYY(dateToSet));
+      setDeadlineDisplay(formatToDisplayFormat(dateToSet));
     } else {
       // Сброс формы при закрытии
       setTitle('');
@@ -73,7 +95,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
       setRepeatInterval('');
       setIsFavorite(false);
     }
-  }, [isOpen, initialDeadline]);
+  }, [isOpen, initialDeadline, formatToDisplayFormat]);
 
   // Компонент календаря
   const CalendarPicker = ({ selectedDate, onDateSelect, onClose }: { selectedDate: string; onDateSelect: (date: string) => void; onClose: () => void }) => {
@@ -191,7 +213,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
           >
             ←
           </button>
-          <span style={{ fontWeight: 600, fontSize: '16px' }}>
+          <span style={{ fontWeight: 600, fontSize: '16px', color: '#1f2937' }}>
             {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
           </span>
           <button
@@ -320,39 +342,58 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
           <div className="form-row">
             <div className="form-group" style={{ position: 'relative' }}>
               <label htmlFor="modal-deadline">Срок выполнения</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
                 <input
                   id="modal-deadline"
                   type="text"
                   value={deadlineDisplay}
                   onChange={(e) => {
                     const inputValue = e.target.value;
-                    // Разрешаем только цифры и слеши
-                    const cleaned = inputValue.replace(/[^\d/]/g, '');
-                    // Автоматически добавляем слеши
+                    
+                    // Определяем разделитель на основе формата
+                    const separator = dateFormat.includes('.') ? '.' : dateFormat.includes('-') ? '-' : '/';
+                    
+                    // Разрешаем только цифры и разделитель
+                    const cleaned = inputValue.replace(new RegExp(`[^\\d${separator === '.' ? '\\.' : separator}]`, 'g'), '');
+                    
+                    // Автоматически добавляем разделители в зависимости от формата
                     let formatted = cleaned;
-                    if (cleaned.length > 2 && cleaned.charAt(2) !== '/') {
-                      formatted = cleaned.slice(0, 2) + '/' + cleaned.slice(2);
+                    const maxLength = 10; // DD/MM/YYYY format length
+                    
+                    if (dateFormat.startsWith('DD') || dateFormat.startsWith('MM')) {
+                      // DD/MM/YYYY или MM/DD/YYYY
+                      if (cleaned.length > 2 && cleaned.charAt(2) !== separator) {
+                        formatted = cleaned.slice(0, 2) + separator + cleaned.slice(2);
+                      }
+                      if (formatted.length > 5 && formatted.charAt(5) !== separator) {
+                        formatted = formatted.slice(0, 5) + separator + formatted.slice(5);
+                      }
+                    } else if (dateFormat.startsWith('YYYY')) {
+                      // YYYY-MM-DD
+                      if (cleaned.length > 4 && cleaned.charAt(4) !== separator) {
+                        formatted = cleaned.slice(0, 4) + separator + cleaned.slice(4);
+                      }
+                      if (formatted.length > 7 && formatted.charAt(7) !== separator) {
+                        formatted = formatted.slice(0, 7) + separator + formatted.slice(7);
+                      }
                     }
-                    if (formatted.length > 5 && formatted.charAt(5) !== '/') {
-                      formatted = formatted.slice(0, 5) + '/' + formatted.slice(5);
-                    }
-                    // Ограничиваем длину до DD/MM/YYYY (10 символов)
-                    if (formatted.length > 10) {
-                      formatted = formatted.slice(0, 10);
+                    
+                    // Ограничиваем длину
+                    if (formatted.length > maxLength) {
+                      formatted = formatted.slice(0, maxLength);
                     }
                     
                     setDeadlineDisplay(formatted);
                     
                     // Парсим в YYYY-MM-DD для внутреннего состояния только если дата полная
-                    const parsed = parseFromDDMMYYYY(formatted);
+                    const parsed = parseFromDisplayFormat(formatted);
                     if (parsed) {
                       setDeadline(parsed);
                     }
                   }}
-                  placeholder="ДД/ММ/ГГГГ"
+                  placeholder={dateFormat.replace('DD', 'ДД').replace('MM', 'ММ').replace('YYYY', 'ГГГГ')}
                   maxLength={10}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, height: '42px' }}
                 />
                 <button
                   type="button"
@@ -363,11 +404,15 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
                     borderRadius: '8px',
                     background: 'white',
                     cursor: 'pointer',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    height: '42px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                   title="Открыть календарь"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
                     <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
@@ -378,7 +423,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
                   selectedDate={deadline}
                   onDateSelect={(dateStr: string) => {
                     setDeadline(dateStr);
-                    setDeadlineDisplay(formatToDDMMYYYY(dateStr));
+                    setDeadlineDisplay(formatToDisplayFormat(dateStr));
                     setShowCalendar(false);
                   }}
                   onClose={() => setShowCalendar(false)}
@@ -386,12 +431,13 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
               )}
             </div>
 
-            <div className="form-group">
+            <div className="form-group" style={{ position: 'relative' }}>
               <label htmlFor="modal-priority">Приоритет</label>
               <select
                 id="modal-priority"
                 value={priority || ''}
                 onChange={(e) => setPriority(e.target.value as Priority || undefined)}
+                style={{ height: '42px' }}
               >
                 <option value="">Не установлен</option>
                 <option value={Priority.high}>Высокий</option>
@@ -401,7 +447,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline }: TaskMo
             </div>
           </div>
 
-          <div className="form-group">
+          <div className="form-group" style={{ marginTop: '12px' }}>
             <label>
               <input
                 type="checkbox"

@@ -4,10 +4,14 @@ import { TaskList } from './components/TaskList';
 import { WeekView } from './components/WeekView';
 import { RegisterPage } from './pages/RegisterPage';
 import { TaskModal } from './components/TaskModal';
+import { Settings } from './components/Settings';
+import { Notifications } from './components/Notifications';
 import type { Task } from './api/taskAPI';
 import type { User } from './api/userAPI';
+import { getPreferences } from './api/userAPI';
 import { TaskStatus, Priority } from './types/enums';
 import type { CreateTaskData } from './types/task';
+import { type DateFormat } from './utils/dateFormat';
 import './App.css';
 
 function App() {
@@ -16,25 +20,56 @@ function App() {
   const [filterStatus, setFilterStatus] = useState<TaskStatus | null>(null);
   const [filterPriority, setFilterPriority] = useState<Priority | null>(null);
   const [filterFavorite, setFilterFavorite] = useState<boolean>(false);
-  const [filterView, setFilterView] = useState<'inbox' | 'today' | 'upcoming' | 'all'>('inbox');
+  const [filterView, setFilterView] = useState<'inbox' | 'today' | 'upcoming' | 'all' | 'notifications'>('inbox');
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [dateFormat, setDateFormat] = useState<DateFormat>('DD/MM/YYYY');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Загрузка пользователя из localStorage при запуске
   useEffect(() => {
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
       try {
-        setCurrentUser(JSON.parse(savedUser));
+        const user = JSON.parse(savedUser);
+        setCurrentUser(user);
+        
+        // Загружаем настройки пользователя
+        if (user.user_id) {
+          loadUserPreferences(user.user_id);
+        }
       } catch (e) {
         console.error('Error parsing saved user:', e);
       }
     }
   }, []);
+
+  // Загрузка настроек пользователя
+  const loadUserPreferences = async (userId: number) => {
+    try {
+      const { preferences } = await getPreferences(userId);
+      if (preferences) {
+        if (preferences.theme) {
+          setTheme(preferences.theme as 'light' | 'dark');
+          document.documentElement.setAttribute('data-theme', preferences.theme as string);
+        }
+        if (preferences.dateFormat) {
+          setDateFormat(preferences.dateFormat as DateFormat);
+        }
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки настроек:', error);
+    }
+  };
+
+  // Применение темы при изменении
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Закрытие меню при клике вне его
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -239,19 +274,12 @@ function App() {
 
   const filteredTasksByView = tasks.filter(task => {
     if (filterView === 'inbox') {
-      // Входящее: активные задачи без дедлайна или с дедлайном сегодня/завтра
-      if (task.status !== 'completed' && task.status !== 'overdue') {
-        if (!task.deadline) return true; // Без дедлайна
-        const deadline = new Date(task.deadline);
-        const today = getTodayDate();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const deadlineKey = formatDateKey(deadline);
-        const todayKey = formatDateKey(today);
-        const tomorrowKey = formatDateKey(tomorrow);
-        return deadlineKey === todayKey || deadlineKey === tomorrowKey;
+      // Входящее: только задачи без категории (созданные во входящих)
+      // Дополнительно проверяем, что это задачи текущего пользователя
+      if (currentUser && task.user_id !== currentUser.user_id) {
+        return false;
       }
-      return false;
+      return task.category_id === null;
     }
     if (filterView === 'today') {
       // Сегодня: задачи с дедлайном сегодня
@@ -279,6 +307,24 @@ function App() {
     // После регистрации очищаем локальные задачи и загружаем задачи пользователя из БД
     setTasks([]);
     await loadTasks();
+    // Загружаем настройки нового пользователя
+    await loadUserPreferences(user.user_id);
+  };
+
+  const handleUserUpdate = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    // Обновляем настройки из обновленного пользователя и применяем их
+    if (updatedUser.preferences) {
+      if (updatedUser.preferences.theme) {
+        const newTheme = updatedUser.preferences.theme as 'light' | 'dark';
+        setTheme(newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+      }
+      if (updatedUser.preferences.dateFormat) {
+        setDateFormat(updatedUser.preferences.dateFormat as DateFormat);
+      }
+    }
   };
 
   if (showRegister) {
@@ -290,33 +336,14 @@ function App() {
     );
   }
 
-  if (showSettings) {
+  if (showSettings && currentUser) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        gap: '20px',
-        background: '#fff1f2'
-      }}>
-        <h2>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '8px' }}>
-            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-            <path d="M12 1V3M12 21V23M23 12H21M3 12H1M19.07 4.93L17.66 6.34M6.34 17.66L4.93 19.07M19.07 19.07L17.66 17.66M6.34 6.34L4.93 4.93" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Настройки
-        </h2>
-        <p>Функционал настроек будет добавлен позже</p>
-        <button 
-          onClick={() => setShowSettings(false)}
-          className="btn-primary"
-          style={{ padding: '12px 24px' }}
-        >
-          Закрыть
-        </button>
-      </div>
+      <Settings
+        key={`settings-${currentUser.user_id}-${JSON.stringify(currentUser.preferences)}`}
+        user={currentUser}
+        onClose={() => setShowSettings(false)}
+        onUpdate={handleUserUpdate}
+      />
     );
   }
 
@@ -355,16 +382,8 @@ function App() {
             </span>
             <span>Входящее</span>
             <span className="nav-count">{tasks.filter(t => {
-              if (t.status === 'completed' || t.status === 'overdue') return false;
-              if (!t.deadline) return true;
-              const deadline = new Date(t.deadline);
-              const today = getTodayDate();
-              const tomorrow = new Date(today);
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const deadlineKey = formatDateKey(deadline);
-              const todayKey = formatDateKey(today);
-              const tomorrowKey = formatDateKey(tomorrow);
-              return deadlineKey === todayKey || deadlineKey === tomorrowKey;
+              if (currentUser && t.user_id !== currentUser.user_id) return false;
+              return t.category_id === null;
             }).length}</span>
           </button>
 
@@ -421,6 +440,28 @@ function App() {
 
           <div style={{ height: '1px', background: '#e5e7eb', margin: '8px 0' }}></div>
 
+          {currentUser && (
+            <button 
+              className={`nav-item ${filterView === 'notifications' ? 'active' : ''}`}
+              onClick={() => {
+                setFilterView('notifications');
+                setFilterStatus(null);
+                setFilterPriority(null);
+                setFilterFavorite(false);
+              }}
+            >
+              <span className="nav-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+              <span>Уведомления</span>
+            </button>
+          )}
+
+          <div style={{ height: '1px', background: '#e5e7eb', margin: '8px 0' }}></div>
+
           <button 
             className={`nav-item ${filterStatus === TaskStatus.completed ? 'active' : ''}`}
             onClick={() => {
@@ -459,7 +500,9 @@ function App() {
 
           <button 
             className={`nav-item ${filterView === 'all' && !filterStatus && !filterPriority && !filterFavorite ? 'active' : ''}`}
-            onClick={clearFilters}
+            onClick={() => {
+              clearFilters();
+            }}
           >
             <span className="nav-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -546,7 +589,7 @@ function App() {
 
       {/* Основной контент */}
       <main className="main-content">
-        {filterView !== 'inbox' && (
+        {filterView !== 'inbox' && filterView !== 'notifications' && (
           <header className="main-header">
             <div className="header-title">
               <h2>
@@ -652,7 +695,9 @@ function App() {
         )}
 
         <div className="content-area">
-          {filterView === 'inbox' ? (
+          {filterView === 'notifications' && currentUser ? (
+            <Notifications userId={currentUser.user_id} dateFormat={dateFormat} />
+          ) : filterView === 'inbox' ? (
             <div className="inbox-view">
               {/* Заголовок на самом листе */}
               <div className="inbox-header">
@@ -664,7 +709,7 @@ function App() {
                 </h1>
               </div>
 
-              {/* Список задач на сплошном фоне */}
+              {/* Список задач на сплошном фоне - всегда список для входящих */}
               <div className="inbox-tasks-container">
                 <TaskList
                   tasks={filteredTasksByView}
@@ -681,10 +726,11 @@ function App() {
                   filterPriority={filterPriority}
                   filterFavorite={filterFavorite}
                   isInboxView={true}
+                  dateFormat={dateFormat}
                 />
               </div>
             </div>
-          ) : viewMode === 'week' ? (
+          ) : filterView !== 'notifications' && viewMode === 'week' ? (
             <WeekView
               tasks={filteredTasksByView}
               onToggleComplete={handleToggleComplete}
@@ -694,6 +740,7 @@ function App() {
               filterStatus={filterStatus}
               filterPriority={filterPriority}
               filterFavorite={filterFavorite}
+              dateFormat={dateFormat}
             />
           ) : (
             <div className="task-list-view">
@@ -718,6 +765,7 @@ function App() {
                 filterStatus={filterStatus}
                 filterPriority={filterPriority}
                 filterFavorite={filterFavorite}
+                dateFormat={dateFormat}
               />
 
               {/* Модальное окно для добавления задачи */}
@@ -728,6 +776,7 @@ function App() {
                   handleAdd(taskData);
                   setShowAddModal(false);
                 }}
+                dateFormat={dateFormat}
               />
             </div>
           )}

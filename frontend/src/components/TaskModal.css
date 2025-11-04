@@ -66,6 +66,8 @@
 
 .modal-form .form-group {
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-form .form-group label {
@@ -74,6 +76,8 @@
   font-weight: 600;
   color: #374151;
   font-size: 14px;
+  height: 22px;
+  line-height: 22px;
 }
 
 .modal-form .form-group input,
@@ -104,6 +108,24 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  align-items: start;
+}
+
+.modal-form .form-row .form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.modal-form .form-row .form-group label {
+  margin-bottom: 8px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0;
+  margin-top: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 .modal-form .form-group label input[type="checkbox"] {

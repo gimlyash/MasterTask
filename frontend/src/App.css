@@ -1,16 +1,40 @@
+/* CSS переменные для тем */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #fff1f2;
+  --bg-hover: #f3f4f6;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --accent-color: #ea580c;
+  --accent-hover: #c2410c;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1f2937;
+  --bg-secondary: #111827;
+  --bg-hover: #374151;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --border-color: #374151;
+  --accent-color: #ea580c;
+  --accent-hover: #f97316;
+}
+
 /* Красно-оранжевый дизайн */
 .todoist-app {
   display: flex;
   height: 100vh;
-  background: #fff1f2;
+  background: var(--bg-secondary, #fff1f2);
   overflow: hidden;
+  color: var(--text-primary, #1f2937);
 }
 
 /* Сайдбар */
 .sidebar {
   width: 260px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--bg-primary, #ffffff);
+  border-right: 1px solid var(--border-color, #e5e7eb);
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
@@ -18,13 +42,13 @@
 
 .sidebar-header {
   padding: 24px 20px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
 }
 
 .logo {
   font-size: 20px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin: 0;
   display: flex;
   align-items: center;
@@ -47,7 +71,7 @@
   border: none;
   background: transparent;
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -56,13 +80,18 @@
 }
 
 .nav-item:hover {
-  background: #f3f4f6;
-  color: #1f2937;
+  background: var(--bg-hover, #f3f4f6);
+  color: var(--text-primary, #1f2937);
 }
 
 .nav-item.active {
   background: #fee2e2;
   color: #dc2626;
+}
+
+[data-theme="dark"] .nav-item.active {
+  background: rgba(234, 88, 12, 0.2);
+  color: #f97316;
 }
 
 .nav-item.active .nav-icon {
@@ -92,7 +121,7 @@
 
 .sidebar-footer {
   padding: 12px 8px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color, #e5e7eb);
   position: relative;
 }
 
@@ -115,7 +144,8 @@
   left: 0;
   right: 0;
   margin-bottom: 8px;
-  background: white;
+  background: var(--bg-primary, white);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow: hidden;
@@ -144,22 +174,26 @@
   gap: 12px;
   cursor: pointer;
   transition: background 0.2s;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-size: 14px;
   text-align: left;
 }
 
 .user-menu-item:hover {
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
 }
 
 .user-menu-item.logout-item {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color, #e5e7eb);
   color: #ef4444;
 }
 
 .user-menu-item.logout-item:hover {
   background: #fee2e2;
+}
+
+[data-theme="dark"] .user-menu-item.logout-item:hover {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .user-menu-item .nav-icon {
@@ -183,12 +217,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fff1f2;
+  background: var(--bg-secondary, #fff1f2);
 }
 
 .main-header {
-  background: white;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--bg-primary, white);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
   padding: 18px 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -199,12 +233,12 @@
 .header-title h2 {
   font-size: 22px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin: 0 0 6px 0;
 }
 
 .tasks-summary {
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   font-size: 13px;
   margin: 0;
 }
@@ -212,7 +246,7 @@
 .view-switcher {
   display: flex;
   gap: 8px;
-  background: #f3f4f6;
+  background: var(--bg-hover, #f3f4f6);
   padding: 4px;
   border-radius: 8px;
 }
@@ -224,20 +258,28 @@
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .view-btn:hover {
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   background: rgba(0, 0, 0, 0.05);
 }
 
+[data-theme="dark"] .view-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 .view-btn.active {
-  background: white;
+  background: var(--bg-primary, white);
   color: #dc2626;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .view-btn.active {
+  color: #f97316;
 }
 
 .content-area {
@@ -261,14 +303,14 @@
 .inbox-title {
   font-size: 24px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin: 0;
   display: flex;
   align-items: center;
 }
 
 .inbox-tasks-container {
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 8px;
   padding: 0;
   margin-bottom: 0;
@@ -282,21 +324,21 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: white;
+  background: var(--bg-primary, white);
   border: none;
   border-radius: 8px;
   padding: 12px 16px;
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   font-size: 14px;
   font-weight: 500;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .inbox-add-btn:hover {
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
   color: #f87171;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
@@ -309,7 +351,7 @@
 .task-list.inbox-list {
   padding: 0;
   gap: 0;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -317,12 +359,12 @@
 .inbox-empty-state {
   padding: 60px 20px;
   text-align: center;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 8px;
 }
 
 .inbox-empty-state p {
-  color: #9ca3af;
+  color: var(--text-secondary, #9ca3af);
   font-size: 15px;
   margin: 0;
 }
@@ -424,9 +466,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: transparent;
+  background: var(--bg-primary, transparent);
   border: none;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-color, #f3f4f6);
   padding: 10px 16px;
   margin: 0;
   box-shadow: none;
@@ -439,7 +481,7 @@
 }
 
 .inbox-task-bar:hover {
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
 }
 
 .task-bar-left {
@@ -461,7 +503,11 @@
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.15s;
-  background: white;
+  background: var(--bg-primary, white);
+}
+
+[data-theme="dark"] .inbox-checkbox {
+  border-color: #6b7280;
 }
 
 .inbox-checkbox:hover {
@@ -483,7 +529,7 @@
 .task-bar-title {
   font-size: 15px;
   font-weight: 400;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -492,7 +538,7 @@
 
 .inbox-task-bar.completed .task-bar-title {
   text-decoration: line-through;
-  color: #9ca3af;
+  color: var(--text-secondary, #9ca3af);
 }
 
 .task-bar-actions {
@@ -533,14 +579,18 @@
 
 .task-bar-menu-dropdown {
   position: fixed;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-primary, white);
+  border: 1px solid var(--border-color, #e5e7eb);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 180px;
   z-index: 10000;
   padding-top: 4px;
   margin-top: -4px;
+}
+
+[data-theme="dark"] .task-bar-menu-dropdown {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .task-bar-menu-dropdown .menu-item {
@@ -551,7 +601,7 @@
   padding: 10px 14px;
   border: none;
   background: transparent;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-size: 14px;
   text-align: left;
   cursor: pointer;
@@ -559,7 +609,7 @@
 }
 
 .task-bar-menu-dropdown .menu-item:hover {
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
 }
 
 .task-bar-menu-dropdown .menu-item.delete {
@@ -570,8 +620,17 @@
   background: #fee2e2;
 }
 
+[data-theme="dark"] .task-bar-menu-dropdown .menu-item.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
 .task-bar-menu-dropdown .menu-item svg {
   flex-shrink: 0;
+  color: var(--text-primary, #1f2937);
+}
+
+[data-theme="dark"] .task-bar-menu-dropdown .menu-item svg {
+  color: #ffffff;
 }
 
 /* Быстрое добавление задачи */
@@ -581,12 +640,16 @@
 
 /* Форма задачи (компактная версия) */
 .task-form {
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 10px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 2px solid transparent;
   transition: all 0.2s;
+}
+
+[data-theme="dark"] .task-form {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .task-form:focus-within {
@@ -729,7 +792,7 @@
 }
 
 .empty-state {
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 12px;
   padding: 80px 20px;
   text-align: center;
@@ -737,14 +800,14 @@
 }
 
 .empty-state p {
-  color: #9ca3af;
+  color: var(--text-secondary, #9ca3af);
   font-size: 16px;
   margin: 0;
 }
 
 /* Карточка задачи в стиле Todoist */
 .task-card {
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 10px;
   padding: 3px 3px 3px 0;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
@@ -755,6 +818,10 @@
   gap: 0;
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="dark"] .task-card {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .task-card.priority-high {
@@ -775,7 +842,7 @@
   align-items: flex-start;
   gap: 12px;
   flex: 1;
-  background: white;
+  background: var(--bg-primary, white);
   transition: all 0.2s;
   padding: 10px 14px;
   border-radius: 7px 0 0 7px;
@@ -836,7 +903,11 @@
   justify-content: center;
   flex-shrink: 0;
   transition: all 0.2s;
-  background: white;
+  background: var(--bg-primary, white);
+}
+
+[data-theme="dark"] .task-checkbox {
+  border-color: #6b7280;
 }
 
 .task-checkbox:hover {
@@ -872,14 +943,14 @@
 .task-title {
   font-size: 14px;
   font-weight: 500;
-  color: #000000;
+  color: var(--text-primary, #000000);
   margin: 0;
   line-height: 1.4;
   flex: 1;
 }
 
 .task-description {
-  color: #ffffff;
+  color: var(--text-secondary, #6b7280);
   font-size: 12px;
   line-height: 1.5;
   margin: 6px 0;
@@ -927,19 +998,22 @@
 }
 
 .status-badge {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--bg-hover, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
 }
 
-.task-deadline {
+.task-deadline,
+.task-reminder,
+.task-timer {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   font-size: 12px;
   padding: 4px 8px;
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
   border-radius: 6px;
+  margin-right: 6px;
 }
 
 .task-actions {
@@ -965,7 +1039,7 @@
   justify-content: center;
   font-size: 16px;
   opacity: 1;
-  color: #000000;
+  color: var(--text-primary, #000000);
   padding: 0;
   transition: transform 0.2s ease;
 }
@@ -994,6 +1068,11 @@
   transition: all 0.3s ease;
 }
 
+[data-theme="dark"] .favorite-btn svg,
+[data-theme="dark"] .delete-btn svg {
+  color: #ffffff;
+}
+
 .favorite-btn svg.star-icon {
   animation: starPulse 2s ease-in-out infinite;
   transform-origin: center;
@@ -1005,6 +1084,62 @@
 
 .favorite-btn.active svg.star-icon {
   animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
+}
+
+/* Звездочка для inbox view */
+.inbox-favorite-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.inbox-favorite-btn:hover {
+  transform: scale(1.1);
+}
+
+.inbox-favorite-btn:active {
+  transform: scale(0.95);
+}
+
+.inbox-favorite-btn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-primary, #000000);
+  transition: all 0.3s ease;
+}
+
+[data-theme="dark"] .inbox-favorite-btn svg {
+  color: #ffffff;
+}
+
+.inbox-favorite-btn svg.star-icon {
+  animation: starPulse 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.inbox-favorite-btn svg.star-icon.outline {
+  animation: starRotate 3s linear infinite;
+}
+
+.inbox-favorite-btn.active svg.star-icon {
+  animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
+}
+
+/* Звездочка для избранных задач во входящих */
+.inbox-task-bar .star-icon.filled {
+  animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
+  color: var(--text-primary, #000000);
+}
+
+[data-theme="dark"] .inbox-task-bar .star-icon.filled {
+  color: #ffffff;
 }
 
 @keyframes starPulse {
@@ -1064,6 +1199,10 @@
 
 .favorite-btn.active {
   color: #000000;
+}
+
+[data-theme="dark"] .favorite-btn.active {
+  color: #ffffff;
 }
 
 .delete-btn svg.trash-icon {

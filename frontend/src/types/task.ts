@@ -15,6 +15,8 @@ export interface Task {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  reminder_time?: string | null;
+  timer_duration?: string | null;
 }
 
 export interface CreateTaskData {
@@ -25,6 +27,8 @@ export interface CreateTaskData {
   is_repeating?: boolean;
   repeat_interval?: string;
   is_favorite?: boolean;
+  reminder_time?: string;
+  timer_duration?: string;
 }
 
 export interface UpdateTaskData {

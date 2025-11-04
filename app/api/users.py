@@ -16,6 +16,9 @@ class UserUpdate(BaseModel):
     email: str | None = None
     password_hash: str | None = None
     preferences: dict | None = None
+
+class PreferencesUpdate(BaseModel):
+    preferences: dict
     
 class UserResponse(BaseModel):
     user_id: int
@@ -70,6 +73,45 @@ async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depen
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error updating user: {str(e)}")
+
+@router.put("/{user_id}/preferences", response_model=UserResponse)
+async def update_preferences(user_id: int, preferences_update: PreferencesUpdate, db: Session = Depends(get_db)):
+    """Обновление настроек пользователя"""
+    try:
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Объединяем существующие настройки с новыми (создаем новый словарь)
+        # JSONB может быть dict или другим типом, поэтому конвертируем явно
+        if user.preferences:
+            if isinstance(user.preferences, dict):
+                current_prefs = user.preferences.copy()
+            else:
+                current_prefs = dict(user.preferences)
+        else:
+            current_prefs = {}
+        
+        # Объединяем настройки
+        new_prefs = {**current_prefs, **preferences_update.preferences}
+        user.preferences = new_prefs
+        
+        db.commit()
+        db.refresh(user)
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error updating preferences: {str(e)}")
+
+@router.get("/{user_id}/preferences")
+async def get_preferences(user_id: int, db: Session = Depends(get_db)):
+    """Получение настроек пользователя"""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"preferences": user.preferences or {}}
 
 @router.delete("/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db)):

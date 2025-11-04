@@ -1,5 +1,6 @@
 import type { Task } from "../types/task";
 import { TaskBarMenu } from "./TaskBarMenu";
+import { formatDate, type DateFormat } from "../utils/dateFormat";
 
 interface TaskCardProps {
   task: Task;
@@ -8,9 +9,10 @@ interface TaskCardProps {
   onToggleFavorite: (taskId: number) => void;
   onEdit?: (task: Task) => void;
   isInboxView?: boolean;
+  dateFormat?: DateFormat;
 }
 
-export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, onEdit, isInboxView = false }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, onEdit, isInboxView = false, dateFormat = 'DD/MM/YYYY' }: TaskCardProps) {
   const getPriorityColor = (priority: string | null) => {
     switch (priority) {
       case 'high': return '#ef4444';
@@ -42,6 +44,23 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
             className={`inbox-checkbox ${isCompleted ? 'completed' : ''}`}
             onClick={() => onToggleComplete(task.task_id)}
           />
+          {task.is_favorite && (
+            <svg 
+              width="14" 
+              height="14" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="star-icon filled"
+              style={{ 
+                marginRight: '6px',
+                flexShrink: 0,
+                color: 'var(--text-primary, #000000)'
+              }}
+            >
+              <path d="M12 1.5L14.5 9L22.5 9.5L16.5 14.5L18.5 22.5L12 18.5L5.5 22.5L7.5 14.5L1.5 9.5L9.5 9L12 1.5Z" fill="currentColor" stroke="currentColor" strokeWidth="1" strokeLinejoin="round"/>
+            </svg>
+          )}
           <span className="task-bar-title">{task.title}</span>
         </div>
         <div className="task-bar-actions">
@@ -115,10 +134,31 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
                   <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/>
                   <path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
-                {new Date(task.deadline).toLocaleDateString('ru-RU', { 
-                  day: 'numeric', 
-                  month: 'short' 
-                })}
+                {formatDate(task.deadline, dateFormat)}
+              </span>
+            )}
+            
+            {task.reminder_time && (
+              <span className="task-reminder">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Напоминание: {task.reminder_time === '15min' ? 'За 15 мин' : 
+                               task.reminder_time === '30min' ? 'За 30 мин' : 
+                               task.reminder_time === '1hour' ? 'За 1 час' : 
+                               task.reminder_time === '2hours' ? 'За 2 часа' : 
+                               task.reminder_time === '1day' ? 'За день' : task.reminder_time}
+              </span>
+            )}
+            
+            {task.timer_duration && (
+              <span className="task-timer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+                  <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+                Таймер: {task.timer_duration}
               </span>
             )}
             

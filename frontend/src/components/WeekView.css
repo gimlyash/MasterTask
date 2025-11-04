@@ -10,9 +10,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .week-navigation {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .week-range {
@@ -20,27 +24,27 @@
   align-items: center;
   gap: 10px;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   font-size: 14px;
 }
 
 .week-nav-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #e5e7eb;
-  background: white;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-primary, white);
   border-radius: 7px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   transition: all 0.2s;
 }
 
 .week-nav-btn:hover {
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
   border-color: #f87171;
   color: #dc2626;
 }
@@ -48,7 +52,7 @@
 .week-today-btn {
   padding: 5px 10px;
   border: 1px solid #fca5a5;
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 5px;
   cursor: pointer;
   font-size: 11px;
@@ -68,10 +72,14 @@
   grid-template-columns: repeat(7, 1fr);
   gap: 10px;
   margin-bottom: 24px;
-  background: white;
+  background: var(--bg-primary, white);
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .week-header {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .week-day {
@@ -81,7 +89,7 @@
   border: 2px solid transparent;
   transition: all 0.2s;
   cursor: pointer;
-  background: #f9fafb;
+  background: var(--bg-hover, #f9fafb);
   text-align: center;
   min-height: 85px;
   display: flex;
@@ -90,8 +98,8 @@
 }
 
 .week-day:hover {
-  background: #f3f4f6;
-  border-color: #e5e7eb;
+  background: var(--bg-secondary, #f3f4f6);
+  border-color: var(--border-color, #e5e7eb);
   transform: translateY(-2px);
 }
 
@@ -122,7 +130,7 @@
 .day-name {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-secondary, #6b7280);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -130,7 +138,7 @@
 .day-number {
   font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   line-height: 1;
 }
 
@@ -160,7 +168,14 @@
 }
 
 .week-day.today .tasks-count-badge {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(220, 38, 38, 0.9);
+  color: white;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .week-day.today .tasks-count-badge {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
 }
 
 .add-task-btn {
@@ -197,22 +212,26 @@
 }
 
 .day-section {
-  background: white;
+  background: var(--bg-primary, white);
   border-radius: 10px;
   padding: 18px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
+[data-theme="dark"] .day-section {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
 .day-section-header {
   margin-bottom: 16px;
   padding-bottom: 10px;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid var(--border-color, #f3f4f6);
 }
 
 .day-title {
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin: 0;
   display: flex;
   align-items: center;

@@ -4,6 +4,7 @@ import { TaskCard } from './TaskCard';
 import { TaskModal } from './TaskModal';
 import { TaskStatus, Priority } from '../types/enums';
 import type { CreateTaskData } from '../types/task';
+import type { DateFormat } from '../utils/dateFormat';
 import './WeekView.css';
 
 interface WeekViewProps {
@@ -15,6 +16,7 @@ interface WeekViewProps {
   filterStatus?: TaskStatus | null;
   filterPriority?: Priority | null;
   filterFavorite?: boolean;
+  dateFormat?: DateFormat;
 }
 
 export function WeekView({ 
@@ -25,7 +27,8 @@ export function WeekView({
   onCreateTask,
   filterStatus,
   filterPriority,
-  filterFavorite
+  filterFavorite,
+  dateFormat = 'DD/MM/YYYY'
 }: WeekViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
@@ -210,6 +213,7 @@ export function WeekView({
         onClose={() => setSelectedDate(null)}
         onSubmit={handleAddTask}
         initialDeadline={selectedDate || undefined}
+        dateFormat={dateFormat}
       />
 
       {/* Задачи по дням */}
@@ -239,6 +243,7 @@ export function WeekView({
                     onToggleComplete={onToggleComplete}
                     onDelete={onDelete}
                     onToggleFavorite={onToggleFavorite}
+                    dateFormat={dateFormat}
                   />
                 ))}
               </div>

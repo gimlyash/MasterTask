@@ -31,3 +31,13 @@ export async function getUser(userId: number): Promise<User> {
   return data;
 }
 
+export async function updatePreferences(userId: number, preferences: Record<string, unknown>): Promise<User> {
+  const { data } = await axios.put(`${API_URL}/users/${userId}/preferences`, { preferences });
+  return data;
+}
+
+export async function getPreferences(userId: number): Promise<{ preferences: Record<string, unknown> }> {
+  const { data } = await axios.get(`${API_URL}/users/${userId}/preferences`);
+  return data;
+}
+

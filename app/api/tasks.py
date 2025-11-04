@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime, timezone
 from app.models.task import Task, PriorityEnum, StatusEnum
+from app.models.analytics_log import AnalyticsLog, ActionEnum
 from app.database.db import get_db
 
 router = APIRouter()
@@ -78,6 +79,19 @@ async def create_task(task: TaskCreate, user_id: int = 1, db:
         db.add(db_task)
         db.commit()
         db.refresh(db_task)
+        
+        # Уведомление о просрочке создается автоматически триггером БД
+        
+        # Создание аналитического лога
+        analytics_log = AnalyticsLog(
+            user_id=user_id,
+            task_id=db_task.task_id,
+            action=ActionEnum.created.value,
+            details={"title": db_task.title, "priority": db_task.priority, "deadline": str(db_task.deadline) if db_task.deadline else None}
+        )
+        db.add(analytics_log)
+        db.commit()
+        
         return db_task
     except HTTPException:
         raise
@@ -111,6 +125,7 @@ async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, d
             if not category:
                 raise HTTPException(status_code=404, detail="Category not found")
         
+        old_status = task.status
         for key, value in task_update.model_dump(exclude_unset=True).items():
             # Преобразуем Enum в строку для сохранения в БД
             if key in ('priority', 'status') and value is not None:
@@ -119,6 +134,28 @@ async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, d
         task.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(task)
+        
+        # Уведомление о просрочке создается автоматически триггером БД
+        
+        # Определяем тип действия для аналитики
+        action_type = ActionEnum.updated
+        if task_update.status and task.status == StatusEnum.completed.value and old_status != StatusEnum.completed.value:
+            action_type = ActionEnum.completed
+        
+        # Создание аналитического лога
+        analytics_log = AnalyticsLog(
+            user_id=user_id,
+            task_id=task.task_id,
+            action=action_type.value,
+            details={
+                "updated_fields": list(task_update.model_dump(exclude_unset=True).keys()),
+                "old_status": old_status,
+                "new_status": task.status
+            }
+        )
+        db.add(analytics_log)
+        db.commit()
+        
         return task
     except HTTPException:
         raise

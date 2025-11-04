@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { TaskCard } from './TaskCard';
 import { InlineTaskForm } from './InlineTaskForm';
 import type { Task } from '../types/task';
 import { TaskStatus, Priority } from '../types/enums';
 import type { CreateTaskData } from '../types/task';
+import type { DateFormat } from '../utils/dateFormat';
+import './WeekView.css';
 
 interface TaskListProps {
   tasks: Task[];
@@ -18,6 +20,7 @@ interface TaskListProps {
   isInboxView?: boolean;
   editingTaskId?: number | null;
   onStartEdit?: (task: Task | null) => void;
+  dateFormat?: DateFormat;
 }
 
 export function TaskList({ 
@@ -31,7 +34,8 @@ export function TaskList({
   filterFavorite,
   isInboxView = false,
   editingTaskId,
-  onStartEdit
+  onStartEdit,
+  dateFormat = 'DD/MM/YYYY'
 }: TaskListProps) {
   const [showExpandedForm, setShowExpandedForm] = useState(false);
   
@@ -43,6 +47,58 @@ export function TaskList({
     if (filterFavorite && !task.is_favorite) return false;
     return true;
   });
+
+  // Группировка задач по дням (только для не-inbox view)
+  const tasksByDate = useMemo(() => {
+    if (isInboxView) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const formatDateKey = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const grouped = new Map<string, Task[]>();
+    
+    filteredTasks.forEach(task => {
+      if (task.deadline) {
+        const taskDate = new Date(task.deadline);
+        taskDate.setHours(0, 0, 0, 0);
+        const dateKey = formatDateKey(taskDate);
+        if (!grouped.has(dateKey)) {
+          grouped.set(dateKey, []);
+        }
+        grouped.get(dateKey)!.push(task);
+      }
+    });
+
+    // Сортируем ключи дат
+    const sortedDates = Array.from(grouped.keys()).sort();
+    
+    return { grouped, sortedDates, formatDateKey };
+  }, [filteredTasks, isInboxView]);
+
+  // Задачи без даты
+  const tasksWithoutDate = useMemo(() => {
+    if (isInboxView) return [];
+    return filteredTasks.filter(task => !task.deadline);
+  }, [filteredTasks, isInboxView]);
+
+  const formatDayName = (date: Date): string => {
+    const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    return days[date.getDay()];
+  };
+
+  const isToday = (dateKey: string): boolean => {
+    if (!tasksByDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return dateKey === tasksByDate.formatDateKey(today);
+  };
 
   const handleSubmit = (data: CreateTaskData, taskId?: number) => {
     if (onCreateTask) {
@@ -102,7 +158,8 @@ export function TaskList({
         <div className={isInboxView ? 'inbox-empty-state' : 'empty-state'}>
           <p>Нет задач, соответствующих выбранным фильтрам.</p>
         </div>
-      ) : (
+      ) : isInboxView ? (
+        // Простой список для inbox view
         filteredTasks.map(task => (
           editingTaskId === task.task_id ? null : (
             <TaskCard
@@ -113,9 +170,76 @@ export function TaskList({
               onToggleFavorite={onToggleFavorite}
               onEdit={handleEditClick}
               isInboxView={isInboxView}
+              dateFormat={dateFormat}
             />
           )
         ))
+      ) : (
+        // Группированный список по дням
+        <>
+          {tasksByDate && tasksByDate.sortedDates.map(dateKey => {
+            const dayTasks = tasksByDate.grouped.get(dateKey) || [];
+            if (dayTasks.length === 0) return null;
+            
+            const date = new Date(dateKey);
+            const dayName = formatDayName(date);
+            const dayNumber = date.getDate();
+            const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+            const monthName = monthNames[date.getMonth()];
+            
+            return (
+              <div key={dateKey} className="day-section">
+                <div className="day-section-header">
+                  <h3 className="day-title">
+                    {dayName}, {dayNumber} {monthName}
+                    {isToday(dateKey) && <span className="today-label">Сегодня</span>}
+                  </h3>
+                </div>
+                <div className="day-tasks">
+                  {dayTasks.map(task => (
+                    editingTaskId === task.task_id ? null : (
+                      <TaskCard
+                        key={task.task_id}
+                        task={task}
+                        onToggleComplete={onToggleComplete}
+                        onDelete={onDelete}
+                        onToggleFavorite={onToggleFavorite}
+                        onEdit={handleEditClick}
+                        isInboxView={false}
+                        dateFormat={dateFormat}
+                      />
+                    )
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Задачи без даты */}
+          {tasksWithoutDate.length > 0 && (
+            <div className="day-section">
+              <div className="day-section-header">
+                <h3 className="day-title">Без даты</h3>
+              </div>
+              <div className="day-tasks">
+                {tasksWithoutDate.map(task => (
+                  editingTaskId === task.task_id ? null : (
+                    <TaskCard
+                      key={task.task_id}
+                      task={task}
+                      onToggleComplete={onToggleComplete}
+                      onDelete={onDelete}
+                      onToggleFavorite={onToggleFavorite}
+                      onEdit={handleEditClick}
+                      isInboxView={false}
+                      dateFormat={dateFormat}
+                    />
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
