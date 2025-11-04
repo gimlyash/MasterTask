@@ -1,4 +1,4 @@
-.register-page {
+.login-page {
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -7,7 +7,7 @@
   padding: 20px;
 }
 
-.register-container {
+.login-container {
   background: white;
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -16,7 +16,7 @@
   width: 100%;
 }
 
-.register-header {
+.login-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -24,7 +24,7 @@
   gap: 20px;
 }
 
-.register-header h1 {
+.login-header h1 {
   margin: 0;
   color: #333;
   font-size: 28px;
@@ -54,7 +54,7 @@
   cursor: not-allowed;
 }
 
-.register-form {
+.login-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -108,16 +108,6 @@
   text-align: center;
 }
 
-.success-message {
-  padding: 12px;
-  background-color: #d4edda;
-  border: 1px solid #c3e6cb;
-  border-radius: 6px;
-  color: #155724;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
 .form-actions {
   display: flex;
   gap: 12px;
@@ -147,28 +137,6 @@
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
-}
-
-.btn-secondary {
-  flex: 1;
-  padding: 12px 24px;
-  background: #f5f5f5;
-  color: #333;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background-color: #e8e8e8;
-}
-
-.btn-secondary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .switch-auth {

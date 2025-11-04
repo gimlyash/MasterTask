@@ -1,6 +1,3 @@
-/**
- * Enum для приоритета задачи
- */
 export const Priority = {
   high: "high",
   medium: "medium",
@@ -9,9 +6,6 @@ export const Priority = {
 
 export type Priority = typeof Priority[keyof typeof Priority]
 
-/**
- * Enum для статуса задачи
- */
 export const TaskStatus = {
   active: "active",
   in_progress: "in_progress",
@@ -21,9 +15,6 @@ export const TaskStatus = {
 
 export type TaskStatus = typeof TaskStatus[keyof typeof TaskStatus]
 
-/**
- * Enum для типа уведомления
- */
 export const NotificationType = {
   overdue: "overdue",
   reminder: "reminder"
@@ -31,9 +22,6 @@ export const NotificationType = {
 
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType]
 
-/**
- * Enum для действий в аналитике
- */
 export const AnalyticsAction = {
   created: "created",
   completed: "completed",

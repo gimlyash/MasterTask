@@ -1,4 +1,10 @@
 import { Priority, TaskStatus } from "./enums";
+import type { Tag } from "../api/tagsAPI";
+
+export interface TaskTag {
+  tag_id: number;
+  name: string;
+}
 
 export interface Task {
   task_id: number;
@@ -17,6 +23,7 @@ export interface Task {
   completed_at: string | null;
   reminder_time?: string | null;
   timer_duration?: string | null;
+  tags?: TaskTag[] | Tag[];
 }
 
 export interface CreateTaskData {
@@ -29,6 +36,7 @@ export interface CreateTaskData {
   is_favorite?: boolean;
   reminder_time?: string;
   timer_duration?: string;
+  tagNames?: string[];
 }
 
 export interface UpdateTaskData {

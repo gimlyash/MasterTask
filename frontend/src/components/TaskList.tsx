@@ -21,6 +21,7 @@ interface TaskListProps {
   editingTaskId?: number | null;
   onStartEdit?: (task: Task | null) => void;
   dateFormat?: DateFormat;
+  onTagClick?: (tagName: string) => void;
 }
 
 export function TaskList({ 
@@ -35,7 +36,9 @@ export function TaskList({
   isInboxView = false,
   editingTaskId,
   onStartEdit,
-  dateFormat = 'DD/MM/YYYY'
+  dateFormat = 'DD/MM/YYYY',
+  onTagClick,
+  onEdit
 }: TaskListProps) {
   const [showExpandedForm, setShowExpandedForm] = useState(false);
   
@@ -44,7 +47,11 @@ export function TaskList({
   const filteredTasks = tasks.filter(task => {
     if (filterStatus && task.status !== filterStatus) return false;
     if (filterPriority && task.priority !== filterPriority) return false;
-    if (filterFavorite && !task.is_favorite) return false;
+    if (filterFavorite) {
+      // Избранные: исключаем завершенные задачи
+      if (!task.is_favorite) return false;
+      if (task.status === 'completed') return false;
+    }
     return true;
   });
 
@@ -168,9 +175,11 @@ export function TaskList({
               onToggleComplete={onToggleComplete}
               onDelete={onDelete}
               onToggleFavorite={onToggleFavorite}
-              onEdit={handleEditClick}
+              onTagClick={onTagClick}
+              onEdit={onEdit || handleEditClick}
               isInboxView={isInboxView}
               dateFormat={dateFormat}
+              hideEditButton={!!onEdit}
             />
           )
         ))
@@ -204,9 +213,11 @@ export function TaskList({
                         onToggleComplete={onToggleComplete}
                         onDelete={onDelete}
                         onToggleFavorite={onToggleFavorite}
-                        onEdit={handleEditClick}
+                        onEdit={onEdit || handleEditClick}
                         isInboxView={false}
                         dateFormat={dateFormat}
+                        onTagClick={onTagClick}
+                        hideEditButton={!!onEdit}
                       />
                     )
                   ))}
@@ -230,9 +241,11 @@ export function TaskList({
                       onToggleComplete={onToggleComplete}
                       onDelete={onDelete}
                       onToggleFavorite={onToggleFavorite}
-                      onEdit={handleEditClick}
+                      onEdit={onEdit || handleEditClick}
                       isInboxView={false}
                       dateFormat={dateFormat}
+                      onTagClick={onTagClick}
+                      hideEditButton={!!onEdit}
                     />
                   )
                 ))}

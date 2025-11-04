@@ -12,11 +12,13 @@ interface WeekViewProps {
   onToggleComplete: (taskId: number) => void;
   onDelete: (taskId: number) => void;
   onToggleFavorite: (taskId: number) => void;
-  onCreateTask: (data: CreateTaskData) => void;
+  onCreateTask: (data: CreateTaskData, taskId?: number) => void;
   filterStatus?: TaskStatus | null;
   filterPriority?: Priority | null;
   filterFavorite?: boolean;
   dateFormat?: DateFormat;
+  onTagClick?: (tagName: string) => void;
+  onEdit?: (task: Task) => void;
 }
 
 export function WeekView({ 
@@ -28,17 +30,23 @@ export function WeekView({
   filterStatus,
   filterPriority,
   filterFavorite,
-  dateFormat = 'DD/MM/YYYY'
+  dateFormat = 'DD/MM/YYYY',
+  onTagClick
 }: WeekViewProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState<number>(0); // Смещение недели (0 = текущая неделя)
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Фильтрация задач по статусу, приоритету и избранному
   const filteredTasks = tasks.filter(task => {
     if (filterStatus && task.status !== filterStatus) return false;
     if (filterPriority && task.priority !== filterPriority) return false;
-    if (filterFavorite && !task.is_favorite) return false;
+    if (filterFavorite) {
+      // Избранные: исключаем завершенные задачи
+      if (!task.is_favorite) return false;
+      if (task.status === 'completed') return false;
+    }
     return true;
   });
 
@@ -136,6 +144,20 @@ export function WeekView({
     setSelectedDate(null);
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleSaveTask = (data: CreateTaskData) => {
+    if (editingTask) {
+      // Передаем task_id для обновления существующей задачи
+      onCreateTask(data, editingTask.task_id);
+    } else {
+      onCreateTask(data);
+    }
+    setEditingTask(null);
+  };
+
   return (
     <div className="week-view">
       {/* Навигация по неделям */}
@@ -216,6 +238,15 @@ export function WeekView({
         dateFormat={dateFormat}
       />
 
+      {/* Модальное окно для редактирования задачи */}
+      <TaskModal
+        isOpen={editingTask !== null}
+        onClose={() => setEditingTask(null)}
+        onSubmit={handleSaveTask}
+        initialTask={editingTask}
+        dateFormat={dateFormat}
+      />
+
       {/* Задачи по дням */}
       <div className="week-tasks">
         {week.map((date, index) => {
@@ -244,6 +275,9 @@ export function WeekView({
                     onDelete={onDelete}
                     onToggleFavorite={onToggleFavorite}
                     dateFormat={dateFormat}
+                    onTagClick={onTagClick}
+                    onEdit={handleEditTask}
+                    hideEditButton={true}
                   />
                 ))}
               </div>
@@ -265,6 +299,10 @@ export function WeekView({
                   onToggleComplete={onToggleComplete}
                   onDelete={onDelete}
                   onToggleFavorite={onToggleFavorite}
+                  dateFormat={dateFormat}
+                  onTagClick={onTagClick}
+                  onEdit={handleEditTask}
+                  hideEditButton={true}
                 />
               ))}
             </div>

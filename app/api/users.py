@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models.user import User
 from app.database.db import get_db
+import hashlib
 
 router = APIRouter()
 
@@ -11,6 +12,10 @@ class UserCreate(BaseModel):
     email: str
     password_hash: str
     preferences: dict | None = None
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 class UserUpdate(BaseModel):
     email: str | None = None
@@ -28,6 +33,34 @@ class UserResponse(BaseModel):
     preferences: dict | None
 
     model_config = ConfigDict(from_attributes=True)
+
+@router.post("/login", response_model=UserResponse)
+async def login_user(login: LoginRequest, db: Session = Depends(get_db)):
+    """Авторизация пользователя по email и паролю"""
+    try:
+        # Находим пользователя по email
+        db_user = db.query(User).filter(User.email == login.email).first()
+        if not db_user:
+            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        
+        # Хэшируем введенный пароль
+        password_hash = hashlib.sha256(login.password.encode()).hexdigest()
+        
+        # Сравниваем хэши
+        if db_user.password_hash != password_hash:
+            raise HTTPException(status_code=401, detail="Неверный email или пароль")
+        
+        # Обновляем время последнего входа
+        db_user.last_login = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(db_user)
+        
+        return db_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка при входе: {str(e)}")
 
 @router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate, db: Session = Depends(get_db)):

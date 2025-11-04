@@ -1,28 +1,18 @@
 import { useState } from 'react';
-import { createUser, type User } from '../api/userAPI';
-import './RegisterPage.css';
+import { loginUser, type User } from '../api/userAPI';
+import './LoginPage.css';
 
-interface RegisterPageProps {
+interface LoginPageProps {
   onSuccess?: (user: User) => void;
   onCancel?: () => void;
-  onSwitchToLogin?: () => void;
+  onSwitchToRegister?: () => void;
 }
 
-export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterPageProps) {
+export function LoginPage({ onSuccess, onCancel, onSwitchToRegister }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-
-  const hashPassword = async (password: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,17 +32,6 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
     // Проверка пароля
     if (!password) {
       newErrors.password = 'Пароль обязателен для заполнения';
-    } else if (password.length < 6) {
-      newErrors.password = 'Пароль должен содержать минимум 6 символов';
-    } else if (password.length > 128) {
-      newErrors.password = 'Пароль не должен превышать 128 символов';
-    }
-
-    // Проверка подтверждения пароля
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Подтвердите пароль';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
     }
 
     setErrors(newErrors);
@@ -62,7 +41,6 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    setSuccessMessage('');
 
     if (!validateForm()) {
       return;
@@ -71,34 +49,26 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
     setIsLoading(true);
 
     try {
-      const passwordHash = await hashPassword(password);
-      const newUser = await createUser({
+      const user = await loginUser({
         email: email.trim(),
-        password_hash: passwordHash,
+        password: password,
       });
 
-      setSuccessMessage('Пользователь успешно создан!');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-
       if (onSuccess) {
-        setTimeout(() => {
-          onSuccess(newUser);
-        }, 1500);
+        onSuccess(user);
       }
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response: { data: { detail?: string } } };
+        const axiosError = error as { response: { data: { detail?: string }; status: number } };
         const errorData = axiosError.response.data;
         if (errorData.detail) {
-          if (errorData.detail.includes('already registered') || errorData.detail.includes('Email')) {
-            setErrors({ email: 'Этот email уже зарегистрирован' });
+          if (axiosError.response.status === 401) {
+            setErrors({ submit: 'Неверный email или пароль' });
           } else {
             setErrors({ submit: errorData.detail });
           }
         } else {
-          setErrors({ submit: 'Ошибка при создании пользователя' });
+          setErrors({ submit: 'Ошибка при входе' });
         }
       } else {
         setErrors({ submit: 'Ошибка соединения с сервером' });
@@ -109,10 +79,10 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
   };
 
   return (
-    <div className="register-page">
-      <div className="register-container">
-        <div className="register-header">
-          <h1>Регистрация пользователя</h1>
+    <div className="login-page">
+      <div className="login-container">
+        <div className="login-header">
+          <h1>Вход в систему</h1>
           {onCancel && (
             <button 
               onClick={onCancel} 
@@ -125,13 +95,7 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
           )}
         </div>
 
-        {successMessage && (
-          <div className="success-message">
-            {successMessage}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="register-form">
+        <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="email">Email *</label>
             <input
@@ -159,28 +123,11 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
                 setPassword(e.target.value);
                 if (errors.password) setErrors({ ...errors, password: '' });
               }}
-              placeholder="Минимум 6 символов"
+              placeholder="Введите пароль"
               className={errors.password ? 'error' : ''}
               disabled={isLoading}
             />
             {errors.password && <span className="error-message">{errors.password}</span>}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Подтвердите пароль *</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' });
-              }}
-              placeholder="Повторите пароль"
-              className={errors.confirmPassword ? 'error' : ''}
-              disabled={isLoading}
-            />
-            {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
           </div>
 
           {errors.submit && (
@@ -193,20 +140,20 @@ export function RegisterPage({ onSuccess, onCancel, onSwitchToLogin }: RegisterP
               className="btn-primary" 
               disabled={isLoading}
             >
-              {isLoading ? 'Создание...' : 'Зарегистрироваться'}
+              {isLoading ? 'Вход...' : 'Войти'}
             </button>
           </div>
 
-          {onSwitchToLogin && (
+          {onSwitchToRegister && (
             <div className="switch-auth">
-              <span>Уже есть аккаунт? </span>
+              <span>Нет аккаунта? </span>
               <button 
                 type="button"
-                onClick={onSwitchToLogin}
+                onClick={onSwitchToRegister}
                 className="link-button"
                 disabled={isLoading}
               >
-                Войти
+                Зарегистрироваться
               </button>
             </div>
           )}

@@ -4,6 +4,8 @@ from pydantic import BaseModel, ConfigDict
 from datetime import datetime, timezone
 from app.models.task import Task, PriorityEnum, StatusEnum
 from app.models.analytics_log import AnalyticsLog, ActionEnum
+from app.models.tag import Tag
+from app.models.task_tag import TaskTag
 from app.database.db import get_db
 
 router = APIRouter()
@@ -29,6 +31,12 @@ class TaskUpdate(BaseModel):
     status: StatusEnum | None = None
     is_favorite: bool | None = None
 
+class TagInfo(BaseModel):
+    tag_id: int
+    name: str
+    
+    model_config = ConfigDict(from_attributes=True)
+
 class TaskResponse(BaseModel):
     task_id: int
     user_id: int
@@ -44,8 +52,38 @@ class TaskResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     completed_at: datetime | None
+    tags: list[TagInfo] = []
 
     model_config = ConfigDict(from_attributes=True)
+    
+    @classmethod
+    def from_orm_with_tags(cls, task: Task, db: Session):
+        """Создает TaskResponse с загруженными тегами"""
+        task_tags = db.query(TaskTag).filter(TaskTag.task_id == task.task_id).all()
+        tags = []
+        for task_tag in task_tags:
+            tag = db.query(Tag).filter(Tag.tag_id == task_tag.tag_id).first()
+            if tag:
+                tags.append(TagInfo(tag_id=tag.tag_id, name=tag.name))
+        
+        task_dict = {
+            "task_id": task.task_id,
+            "user_id": task.user_id,
+            "title": task.title,
+            "description": task.description,
+            "category_id": task.category_id,
+            "priority": task.priority,
+            "deadline": task.deadline,
+            "is_repeating": task.is_repeating,
+            "repeat_interval": task.repeat_interval,
+            "status": task.status,
+            "is_favorite": task.is_favorite,
+            "created_at": task.created_at,
+            "updated_at": task.updated_at,
+            "completed_at": task.completed_at,
+            "tags": tags
+        }
+        return cls(**task_dict)
 
 @router.post("/", response_model=TaskResponse)
 async def create_task(task: TaskCreate, user_id: int = 1, db:
@@ -92,7 +130,7 @@ async def create_task(task: TaskCreate, user_id: int = 1, db:
         db.add(analytics_log)
         db.commit()
         
-        return db_task
+        return TaskResponse.from_orm_with_tags(db_task, db)
     except HTTPException:
         raise
     except Exception as e:
@@ -102,14 +140,14 @@ async def create_task(task: TaskCreate, user_id: int = 1, db:
 @router.get("/", response_model=list[TaskResponse])
 async def get_tasks(user_id: int = 1, db: Session = Depends(get_db)):
     tasks = db.query(Task).filter(Task.user_id == user_id).all()
-    return tasks
+    return [TaskResponse.from_orm_with_tags(task, db) for task in tasks]
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(task_id: int, user_id: int = 1, db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.task_id == task_id, Task.user_id == user_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    return task
+    return TaskResponse.from_orm_with_tags(task, db)
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, db: Session = Depends(get_db)):
@@ -156,7 +194,7 @@ async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, d
         db.add(analytics_log)
         db.commit()
         
-        return task
+        return TaskResponse.from_orm_with_tags(task, db)
     except HTTPException:
         raise
     except Exception as e:

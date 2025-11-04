@@ -10,9 +10,11 @@ interface TaskCardProps {
   onEdit?: (task: Task) => void;
   isInboxView?: boolean;
   dateFormat?: DateFormat;
+  onTagClick?: (tagName: string) => void;
+  hideEditButton?: boolean;
 }
 
-export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, onEdit, isInboxView = false, dateFormat = 'DD/MM/YYYY' }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, onEdit, isInboxView = false, dateFormat = 'DD/MM/YYYY', onTagClick, hideEditButton = false }: TaskCardProps) {
   const getPriorityColor = (priority: string | null) => {
     switch (priority) {
       case 'high': return '#ef4444';
@@ -38,11 +40,23 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
   // Простой бар для "Входящее" - как в Todoist
   if (isInboxView) {
     return (
-      <div className={`inbox-task-bar ${isCompleted ? 'completed' : ''}`}>
+      <div 
+        className={`inbox-task-bar ${isCompleted ? 'completed' : ''}`}
+        onClick={(e) => {
+          // Открываем редактирование при клике на карточку, если не кликнули по кнопке
+          if (onEdit && !(e.target as HTMLElement).closest('button')) {
+            onEdit(task);
+          }
+        }}
+        style={{ cursor: onEdit ? 'pointer' : 'default' }}
+      >
         <div className="task-bar-left">
           <div 
             className={`inbox-checkbox ${isCompleted ? 'completed' : ''}`}
-            onClick={() => onToggleComplete(task.task_id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleComplete(task.task_id);
+            }}
           />
           {task.is_favorite && (
             <svg 
@@ -62,9 +76,20 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
             </svg>
           )}
           <span className="task-bar-title">{task.title}</span>
+          {task.tags && task.tags.length > 0 && (
+            <span style={{ 
+              marginLeft: '10px', 
+              fontSize: '11px', 
+              color: '#9ca3af',
+              fontWeight: 'normal',
+              opacity: 0.8
+            }}>
+              {task.tags.map(tag => `#${tag.name}`).join(' ')}
+            </span>
+          )}
         </div>
         <div className="task-bar-actions">
-          {onEdit && (
+          {onEdit && !hideEditButton && (
             <button 
               className="task-bar-icon-btn"
               onClick={() => onEdit(task)}
@@ -99,11 +124,23 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
 
   // Обычная карточка для остальных видов
   return (
-    <div className={`task-card ${isCompleted ? 'completed' : ''} ${priorityClass}`}>
+    <div 
+      className={`task-card ${isCompleted ? 'completed' : ''} ${priorityClass}`}
+      onClick={(e) => {
+        // Открываем редактирование при клике на карточку, если не кликнули по кнопке
+        if (onEdit && !(e.target as HTMLElement).closest('button')) {
+          onEdit(task);
+        }
+      }}
+      style={{ cursor: onEdit ? 'pointer' : 'default' }}
+    >
       <div className="task-priority-section">
         <div 
           className={`task-checkbox ${isCompleted ? 'completed' : ''}`}
-          onClick={() => onToggleComplete(task.task_id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleComplete(task.task_id);
+          }}
         />
 
         <div className="task-content">
@@ -113,6 +150,39 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
           
           {task.description && (
             <p className="task-description">{task.description}</p>
+          )}
+
+          {/* Теги отображаются отдельно, мелким шрифтом */}
+          {task.tags && task.tags.length > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '6px', 
+              flexWrap: 'wrap', 
+              marginTop: '6px',
+              marginBottom: '8px',
+              fontSize: '11px',
+              color: '#6b7280',
+              lineHeight: '1.4'
+            }}>
+              {task.tags.map((tag) => (
+                <span
+                  key={tag.tag_id}
+                  className="task-tag"
+                  style={{
+                    cursor: onTagClick ? 'pointer' : 'default',
+                    textDecoration: onTagClick ? 'underline' : 'none'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onTagClick) {
+                      onTagClick(tag.name);
+                    }
+                  }}
+                >
+                  #{tag.name}
+                </span>
+              ))}
+            </div>
           )}
 
           <div className="task-meta">
@@ -185,6 +255,18 @@ export function TaskCard({ task, onToggleComplete, onDelete, onToggleFavorite, o
             </svg>
           )}
         </button>
+        {onEdit && !hideEditButton && (
+          <button 
+            onClick={() => onEdit(task)}
+            className="edit-btn"
+            title="Редактировать"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M18.5 2.5C18.8978 2.10218 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10218 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        )}
         <button 
           onClick={() => onDelete(task.task_id)} 
           className="delete-btn"

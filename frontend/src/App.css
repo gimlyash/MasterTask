@@ -1,11 +1,11 @@
 /* CSS переменные для тем */
 :root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #fff1f2;
-  --bg-hover: #f3f4f6;
+  --bg-primary: #f9fafb;
+  --bg-secondary: #f3f4f6;
+  --bg-hover: #e5e7eb;
   --text-primary: #1f2937;
   --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
+  --border-color: #d1d5db;
   --accent-color: #ea580c;
   --accent-hover: #c2410c;
 }
@@ -43,10 +43,84 @@
 .sidebar-header {
   padding: 24px 20px;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 50%, #fefce8 100%);
 }
 
+.sidebar-header::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -25px;
+  width: 60px;
+  height: 60px;
+  z-index: 0;
+  background: radial-gradient(circle, #fbbf24 0%, #f59e0b 30%, #fbbf24 50%, transparent 75%);
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: sunRotate 20s linear infinite;
+  filter: blur(0.5px);
+}
+
+@keyframes sunRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Облака из белых кругов и солнечные лучи для светлой темы */
+.sidebar-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background-image: 
+    /* Облака из белых кругов - под MasterTask и по бокам */
+    radial-gradient(circle 18px at 15% 70%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 22px at 25% 68%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 20px at 35% 72%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 16px at 45% 70%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 19px at 55% 68%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 21px at 65% 72%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 17px at 75% 70%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 23px at 85% 68%, #ffffff 0%, #ffffff 100%),
+    /* Дополнительные круги для объема */
+    radial-gradient(circle 15px at 20% 75%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 14px at 30% 73%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 16px at 50% 75%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 18px at 70% 73%, #ffffff 0%, #ffffff 100%),
+    radial-gradient(circle 13px at 80% 75%, #ffffff 0%, #ffffff 100%),
+    /* Солнечные лучи (двигаются снизу вверх) */
+    linear-gradient(180deg, transparent 0%, rgba(255, 237, 111, 0.4) 15%, transparent 35%),
+    linear-gradient(175deg, transparent 0%, rgba(255, 237, 111, 0.35) 20%, transparent 40%),
+    linear-gradient(185deg, transparent 0%, rgba(255, 237, 111, 0.35) 20%, transparent 40%),
+    linear-gradient(170deg, transparent 0%, rgba(255, 237, 111, 0.3) 25%, transparent 45%),
+    linear-gradient(190deg, transparent 0%, rgba(255, 237, 111, 0.3) 25%, transparent 45%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 400%, 100% 400%, 100% 400%, 100% 400%, 100% 400%;
+  background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 100%, 0% 100%, 0% 100%, 0% 100%, 0% 100%;
+  animation: raysMoveUp 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes raysMoveUp {
+  0% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 100%, 0% 100%, 0% 100%, 0% 100%, 0% 100%;
+  }
+  100% {
+    background-position: 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% 0%, 0% -300%, 0% -300%, 0% -300%, 0% -300%, 0% -300%;
+  }
+}
+
+
 .logo {
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
   margin: 0;
   display: flex;
@@ -54,31 +128,35 @@
   gap: 8px;
   cursor: pointer;
   transition: transform 0.3s ease;
-  background: linear-gradient(135deg, #ea580c 0%, #f97316 25%, #fb923c 50%, #f97316 75%, #ea580c 100%);
+  position: relative;
+  background: linear-gradient(135deg, #65a30d 0%, #84cc16 25%, #a3e635 50%, #84cc16 75%, #65a30d 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   background-size: 300% 300%;
-  animation: gradientShift 8s ease-in-out infinite;
+  animation: gradientShift 5s ease-in-out infinite;
+  z-index: 1;
+  filter: drop-shadow(5px 5px 8px rgba(0, 0, 0, 0.5));
 }
+
 
 .logo:hover {
   transform: scale(1.05);
-  background: linear-gradient(135deg, #f97316 0%, #fb923c 25%, #fbbf24 50%, #fb923c 75%, #f97316 100%);
+  background: linear-gradient(135deg, #84cc16 0%, #a3e635 25%, #bef264 50%, #a3e635 75%, #84cc16 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradientShiftHover 4s ease-in-out infinite;
+  animation: gradientShiftHover 2.5s ease-in-out infinite;
 }
 
 .logo svg {
   transition: transform 0.3s ease;
-  color: #ea580c;
+  color: #84cc16;
 }
 
 .logo:hover svg {
   transform: rotate(5deg) scale(1.1);
-  color: #f97316;
+  color: #a3e635;
 }
 
 @keyframes gradientShift {
@@ -105,30 +183,109 @@
   }
 }
 
+@keyframes starsMove {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  25% {
+    transform: translateX(5px) translateY(-3px);
+  }
+  50% {
+    transform: translateX(-3px) translateY(5px);
+  }
+  75% {
+    transform: translateX(4px) translateY(2px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
 /* Темная тема для логотипа */
 [data-theme="dark"] .logo {
-  background: linear-gradient(135deg, #f97316 0%, #fb923c 25%, #fbbf24 50%, #fb923c 75%, #f97316 100%);
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 25%, #818cf8 50%, #a78bfa 75%, #c4b5fd 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   background-size: 300% 300%;
-  animation: gradientShift 8s ease-in-out infinite;
+  animation: gradientShift 5s ease-in-out infinite;
+}
+
+/* Темная тема - черный фон со звездами */
+[data-theme="dark"] .sidebar-header {
+  background: #000000;
+}
+
+[data-theme="dark"] .sidebar-header::before {
+  display: none;
+}
+
+/* Отдельный блок для звезд в темной теме */
+[data-theme="dark"] .sidebar-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  background-image: 
+    radial-gradient(circle at 5% 15%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 15% 45%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 25% 8%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 35% 32%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 45% 18%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 55% 42%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 65% 12%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 75% 28%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 85% 6%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 95% 38%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 10% 25%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 20% 52%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 30% 22%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 40% 8%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 50% 35%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 60% 15%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 70% 48%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 80% 20%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 90% 10%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 12% 35%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 22% 18%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 32% 42%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 42% 28%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 52% 8%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 62% 38%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 72% 15%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 82% 32%, #ffffff 0.5px, transparent 0.5px),
+    radial-gradient(circle at 92% 22%, #ffffff 0.5px, transparent 0.5px);
+  background-size: 100% 300%;
+  background-position: 0% 0%;
+  animation: starsMoveDown 20s linear infinite;
+}
+
+@keyframes starsMoveDown {
+  0% {
+    background-position: 0% -200%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
 }
 
 [data-theme="dark"] .logo:hover {
-  background: linear-gradient(135deg, #fb923c 0%, #fbbf24 25%, #fcd34d 50%, #fbbf24 75%, #fb923c 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #818cf8 25%, #a78bfa 50%, #c4b5fd 75%, #ddd6fe 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradientShiftHover 4s ease-in-out infinite;
+  animation: gradientShiftHover 2.5s ease-in-out infinite;
 }
 
 [data-theme="dark"] .logo svg {
-  color: #f97316;
+  color: #818cf8;
 }
 
 [data-theme="dark"] .logo:hover svg {
-  color: #fb923c;
+  color: #a78bfa;
 }
 
 .sidebar-nav {
@@ -190,6 +347,39 @@
   font-weight: 500;
 }
 
+/* Уведомление о просроченных задачах */
+.overdue-notification {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  background: #dc2626;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  min-width: 20px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3);
+}
+
+/* Анимация моргания */
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
+.blinking {
+  animation: blink 1.5s ease-in-out infinite;
+}
+
 .nav-item.active .nav-count {
   background: rgba(220, 38, 38, 0.15);
   color: #dc2626;
@@ -233,6 +423,69 @@
 .nav-item-favorite.active .nav-count {
   background: rgba(251, 191, 36, 0.3);
   color: #d97706;
+}
+
+/* Синий цвет для уведомлений */
+.nav-item-notifications {
+  color: #3b82f6;
+}
+
+.nav-item-notifications:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #2563eb;
+}
+
+.nav-item-notifications.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #2563eb;
+}
+
+.nav-item-notifications.active .nav-count {
+  background: rgba(59, 130, 246, 0.3);
+  color: #1d4ed8;
+}
+
+.nav-item-notifications .nav-icon svg {
+  color: #3b82f6;
+}
+
+.nav-item-notifications:hover .nav-icon svg {
+  color: #2563eb;
+}
+
+.nav-item-notifications.active .nav-icon svg {
+  color: #2563eb;
+}
+
+[data-theme="dark"] .nav-item-notifications {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-item-notifications:hover {
+  background: rgba(96, 165, 250, 0.15);
+  color: #3b82f6;
+}
+
+[data-theme="dark"] .nav-item-notifications.active {
+  background: rgba(96, 165, 250, 0.2);
+  color: #3b82f6;
+}
+
+[data-theme="dark"] .nav-item-notifications.active .nav-count {
+  background: rgba(96, 165, 250, 0.3);
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-item-notifications .nav-icon svg {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-item-notifications:hover .nav-icon svg {
+  color: #3b82f6;
+}
+
+[data-theme="dark"] .nav-item-notifications.active .nav-icon svg {
+  color: #3b82f6;
 }
 
 .sidebar-footer {
@@ -1212,6 +1465,7 @@
 }
 
 .favorite-btn,
+.edit-btn,
 .delete-btn {
   width: 32px;
   height: 32px;
@@ -1237,6 +1491,14 @@
   transform: scale(0.95);
 }
 
+.edit-btn:hover {
+  transform: scale(1.1);
+}
+
+.edit-btn:active {
+  transform: scale(0.95);
+}
+
 .delete-btn:hover {
   transform: scale(1.1);
 }
@@ -1246,6 +1508,7 @@
 }
 
 .favorite-btn svg,
+.edit-btn svg,
 .delete-btn svg {
   width: 16px;
   height: 16px;
@@ -1254,6 +1517,7 @@
 }
 
 [data-theme="dark"] .favorite-btn svg,
+[data-theme="dark"] .edit-btn svg,
 [data-theme="dark"] .delete-btn svg {
   color: #ffffff;
 }

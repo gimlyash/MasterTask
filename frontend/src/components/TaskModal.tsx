@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Priority } from '../types/enums';
-import type { CreateTaskData } from '../types/task';
+import type { CreateTaskData, Task } from '../types/task';
 import type { DateFormat } from '../utils/dateFormat';
 import { formatDate } from '../utils/dateFormat';
+import type { Tag } from '../api/tagsAPI';
+import { getTags, createTag } from '../api/tagsAPI';
 import './TaskModal.css';
 
 interface TaskModalProps {
@@ -10,10 +12,11 @@ interface TaskModalProps {
   onClose: () => void;
   onSubmit: (data: CreateTaskData) => void;
   initialDeadline?: string;
+  initialTask?: Task | null;
   dateFormat?: DateFormat;
 }
 
-export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateFormat = 'DD/MM/YYYY' }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, initialTask, dateFormat = 'DD/MM/YYYY' }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority | undefined>(undefined);
@@ -23,6 +26,61 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  // Загрузка доступных тегов
+  useEffect(() => {
+    getTags().then(setAvailableTags).catch(console.error);
+  }, []);
+
+  // Добавление тега
+  const handleAddTag = async (tagName: string) => {
+    const trimmedName = tagName.trim().toLowerCase();
+    if (!trimmedName || tags.includes(trimmedName)) return;
+    
+    try {
+      // Создаем или находим тег (backend нормализует имя)
+      const tag = await createTag(trimmedName);
+      setTags([...tags, tag.name.toLowerCase()]);
+      setTagInput('');
+      setShowTagSuggestions(false);
+      
+      // Обновляем список доступных тегов
+      const updatedTags = await getTags();
+      setAvailableTags(updatedTags);
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  // Удаление тега
+  const handleRemoveTag = (tagName: string) => {
+    setTags(tags.filter(t => t !== tagName));
+  };
+
+  // Обработка нажатий клавиш в поле ввода тега
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const inputValue = tagInput.trim();
+      if (inputValue) {
+        handleAddTag(inputValue);
+      }
+    } else if (e.key === 'Backspace' && tagInput === '' && tags.length > 0) {
+      // Удаляем последний тег при нажатии Backspace на пустом поле
+      handleRemoveTag(tags[tags.length - 1]);
+    }
+  };
+
+  // Фильтрация предложений тегов
+  const filteredTagSuggestions = availableTags.filter(tag => {
+    const query = tagInput.toLowerCase();
+    return tag.name.toLowerCase().includes(query) && !tags.includes(tag.name.toLowerCase());
+  });
 
   // Функция для конвертации YYYY-MM-DD в выбранный формат
   const formatToDisplayFormat = useCallback((isoDate: string): string => {
@@ -69,21 +127,53 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
 
   useEffect(() => {
     if (isOpen) {
-      // Устанавливаем deadline при открытии модалки
-      let dateToSet: string;
-      if (initialDeadline) {
-        dateToSet = initialDeadline;
+      // Если есть initialTask - заполняем форму данными задачи
+      if (initialTask) {
+        setTitle(initialTask.title || '');
+        setDescription(initialTask.description || '');
+        setPriority(initialTask.priority || undefined);
+        setIsRepeating(initialTask.is_repeating || false);
+        setRepeatInterval(initialTask.repeat_interval || '');
+        setIsFavorite(initialTask.is_favorite || false);
+        setTags(initialTask.tags?.map(tag => tag.name.toLowerCase()) || []);
+        
+        // Устанавливаем deadline
+        let dateToSet: string;
+        if (initialTask.deadline) {
+          // Преобразуем ISO строку в YYYY-MM-DD
+          const deadlineDate = new Date(initialTask.deadline);
+          const year = deadlineDate.getFullYear();
+          const month = String(deadlineDate.getMonth() + 1).padStart(2, '0');
+          const day = String(deadlineDate.getDate()).padStart(2, '0');
+          dateToSet = `${year}-${month}-${day}`;
+        } else if (initialDeadline) {
+          dateToSet = initialDeadline;
+        } else {
+          // Если нет deadline, устанавливаем сегодняшнюю дату по умолчанию
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          dateToSet = `${year}-${month}-${day}`;
+        }
+        setDeadline(dateToSet);
+        setDeadlineDisplay(formatToDisplayFormat(dateToSet));
       } else {
-        // Если нет initialDeadline, устанавливаем сегодняшнюю дату по умолчанию
-        // Используем локальное время, чтобы избежать проблем с UTC
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        dateToSet = `${year}-${month}-${day}`;
+        // Создание новой задачи
+        let dateToSet: string;
+        if (initialDeadline) {
+          dateToSet = initialDeadline;
+        } else {
+          // Если нет initialDeadline, устанавливаем сегодняшнюю дату по умолчанию
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          dateToSet = `${year}-${month}-${day}`;
+        }
+        setDeadline(dateToSet);
+        setDeadlineDisplay(formatToDisplayFormat(dateToSet));
       }
-      setDeadline(dateToSet);
-      setDeadlineDisplay(formatToDisplayFormat(dateToSet));
     } else {
       // Сброс формы при закрытии
       setTitle('');
@@ -94,8 +184,11 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
       setIsRepeating(false);
       setRepeatInterval('');
       setIsFavorite(false);
+      setTags([]);
+      setTagInput('');
+      setShowTagSuggestions(false);
     }
-  }, [isOpen, initialDeadline, formatToDisplayFormat]);
+  }, [isOpen, initialDeadline, initialTask, formatToDisplayFormat]);
 
   // Компонент календаря
   const CalendarPicker = ({ selectedDate, onDateSelect, onClose }: { selectedDate: string; onDateSelect: (date: string) => void; onClose: () => void }) => {
@@ -293,6 +386,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
       is_favorite: isFavorite,
       is_repeating: isRepeating,
       repeat_interval: isRepeating && repeatInterval ? repeatInterval : undefined,
+      tagNames: tags.length > 0 ? tags : undefined,
     };
 
     // Форматируем deadline правильно для бэкенда
@@ -310,7 +404,7 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Создать задачу</h2>
+          <h2>{initialTask ? 'Редактировать задачу' : 'Создать задачу'}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
@@ -489,12 +583,108 @@ export function TaskModal({ isOpen, onClose, onSubmit, initialDeadline, dateForm
             </label>
           </div>
 
+          <div className="form-group" style={{ marginTop: '12px', position: 'relative' }}>
+            <label htmlFor="modal-tags">Теги</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+              {tags.map((tag, index) => (
+                <span key={index} style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  padding: '4px 8px', 
+                  backgroundColor: '#f3f4f6', 
+                  borderRadius: '12px', 
+                  fontSize: '12px',
+                  gap: '6px'
+                }}>
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              ref={tagInputRef}
+              id="modal-tags"
+              type="text"
+              value={tagInput}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setShowTagSuggestions(e.target.value.length > 0);
+              }}
+              onKeyDown={handleTagInputKeyDown}
+              onFocus={() => setShowTagSuggestions(tagInput.length > 0)}
+              onBlur={() => {
+                // Небольшая задержка, чтобы клик по предложению успел сработать
+                setTimeout(() => setShowTagSuggestions(false), 200);
+              }}
+              placeholder="Добавить тег (Enter или запятая)"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+            />
+            {showTagSuggestions && filteredTagSuggestions.length > 0 && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                marginTop: '4px',
+                maxHeight: '150px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}>
+                {filteredTagSuggestions.map(tag => (
+                  <button
+                    key={tag.tag_id}
+                    type="button"
+                    onClick={() => handleAddTag(tag.name)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="modal-actions">
             <button type="button" onClick={onClose} className="btn-secondary">
               Отмена
             </button>
             <button type="submit" className="btn-primary">
-              Создать задачу
+              {initialTask ? 'Сохранить изменения' : 'Создать задачу'}
             </button>
           </div>
         </form>

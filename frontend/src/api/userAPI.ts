@@ -41,3 +41,13 @@ export async function getPreferences(userId: number): Promise<{ preferences: Rec
   return data;
 }
 
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export async function loginUser(data: LoginData): Promise<User> {
+  const { data: res } = await axios.post(`${API_URL}/users/login`, data);
+  return res;
+}
+

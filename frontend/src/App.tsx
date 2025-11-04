@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { getTasks, createTask, deleteTask, updateTask } from './api/taskAPI';
+import { addTagToTask, getTags, createTag, getTaskTags, removeTagFromTask } from './api/tagsAPI';
 import { TaskList } from './components/TaskList';
 import { WeekView } from './components/WeekView';
 import { RegisterPage } from './pages/RegisterPage';
+import { LoginPage } from './pages/LoginPage';
 import { TaskModal } from './components/TaskModal';
 import { Settings } from './components/Settings';
 import { Notifications } from './components/Notifications';
@@ -16,6 +18,7 @@ import './App.css';
 
 function App() {
   const [showRegister, setShowRegister] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filterStatus, setFilterStatus] = useState<TaskStatus | null>(null);
   const [filterPriority, setFilterPriority] = useState<Priority | null>(null);
@@ -29,6 +32,37 @@ function App() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [dateFormat, setDateFormat] = useState<DateFormat>('DD/MM/YYYY');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<Array<{ tag_id: number; name: string }>>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  
+  // Загрузка доступных тегов
+  useEffect(() => {
+    if (currentUser) {
+      import('./api/tagsAPI').then(({ getTags }) => {
+        getTags().then(tags => {
+          setAvailableTags(tags);
+        }).catch(console.error);
+      });
+    }
+  }, [currentUser]);
+  
+  // Обработчик клика по тегу для фильтрации
+  const handleTagClick = (tagName: string) => {
+    if (!selectedTags.includes(tagName)) {
+      setSelectedTags([...selectedTags, tagName]);
+    }
+  };
+  
+  // Фильтрация тегов для автодополнения
+  const filteredTagSuggestions = availableTags.filter((tag: { tag_id: number; name: string }) => {
+    if (searchQuery.startsWith('#')) {
+      const tagQuery = searchQuery.slice(1).toLowerCase();
+      return tag.name.toLowerCase().includes(tagQuery) && !selectedTags.includes(tag.name);
+    }
+    return false;
+  });
 
   // Загрузка пользователя из localStorage при запуске
   useEffect(() => {
@@ -90,6 +124,18 @@ function App() {
     };
   }, [showUserMenu]);
 
+  // Состояние для принудительного обновления счетчика просроченных задач
+  const [, setRefreshCounter] = useState(0);
+
+  // Периодическое обновление счетчика просроченных задач (каждую минуту)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRefreshCounter(prev => prev + 1);
+    }, 60000); // Обновление каждую минуту
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Загрузка локальных задач (для незарегистрированных пользователей)
   // Локальные задачи НЕ сохраняются - они существуют только в текущей сессии
   const loadLocalTasks = useCallback(() => {
@@ -108,6 +154,7 @@ function App() {
       // Если пользователь зарегистрирован - загружаем с бэкенда
       try {
         const fetchedTasks = await getTasks(currentUser.user_id);
+        // Теги уже включены в ответ от backend через from_orm_with_tags
         setTasks(fetchedTasks);
       } catch (error) {
         console.error('Ошибка загрузки задач:', error);
@@ -123,36 +170,154 @@ function App() {
     loadTasks();
   }, [loadTasks]);
 
-  const handleAdd = async (data: CreateTaskData) => {
+  const handleAdd = async (data: CreateTaskData, taskId?: number) => {
     if (currentUser) {
       // Если пользователь зарегистрирован - сохраняем на бэкенд
       try {
-        await createTask(data, currentUser.user_id);
-        await loadTasks();
+        if (taskId) {
+          // Обновление существующей задачи
+          await updateTask(taskId, {
+            title: data.title,
+            description: data.description,
+            priority: data.priority || null,
+            deadline: data.deadline || null,
+            is_repeating: data.is_repeating,
+            repeat_interval: data.repeat_interval || null,
+            is_favorite: data.is_favorite,
+          }, currentUser.user_id);
+          
+          // Обрабатываем теги - синхронизируем старые и новые теги
+          // Получаем текущие теги задачи
+          const currentTaskTags = await getTaskTags(taskId);
+          const currentTagIds = new Set(currentTaskTags.map(tt => tt.tag_id));
+          
+          // Определяем новые теги
+          const newTagNames = (data.tagNames || []).map(name => name.trim().toLowerCase()).filter(Boolean);
+          const newTagIds = new Set<number>();
+          
+          if (newTagNames.length > 0) {
+            // Получаем все доступные теги
+            const allTags = await getTags();
+            const tagMap = new Map(allTags.map(t => [t.name.toLowerCase(), t.tag_id]));
+            
+            // Создаем или находим теги и собираем их ID
+            for (const tagName of newTagNames) {
+              let tagId = tagMap.get(tagName);
+              if (!tagId) {
+                const newTag = await createTag(tagName);
+                tagId = newTag.tag_id;
+                // Обновляем map для последующих итераций
+                tagMap.set(tagName, tagId);
+              }
+              newTagIds.add(tagId);
+            }
+          }
+          
+          // Удаляем теги, которых нет в новом списке
+          const tagsToRemove = Array.from(currentTagIds).filter(tagId => !newTagIds.has(tagId));
+          for (const tagId of tagsToRemove) {
+            try {
+              await removeTagFromTask(taskId, tagId);
+            } catch (error) {
+              console.error(`Ошибка при удалении тега ${tagId} из задачи ${taskId}:`, error);
+            }
+          }
+          
+          // Добавляем новые теги, которых нет в старом списке
+          const tagsToAdd = Array.from(newTagIds).filter(tagId => !currentTagIds.has(tagId));
+          for (const tagId of tagsToAdd) {
+            try {
+              await addTagToTask(taskId, tagId);
+            } catch (error) {
+              console.error(`Ошибка при добавлении тега ${tagId} к задаче ${taskId}:`, error);
+            }
+          }
+          
+          // Перезагружаем задачи, чтобы получить обновленные данные
+          await loadTasks();
+        } else {
+          // Создание новой задачи
+          const newTask = await createTask(data, currentUser.user_id);
+          
+          // Обрабатываем теги
+          if (data.tagNames && data.tagNames.length > 0) {
+            // Сначала загружаем все существующие теги
+            const allTags = await getTags();
+            const tagMap = new Map(allTags.map(t => [t.name.toLowerCase(), t.tag_id]));
+            
+            // Обрабатываем каждый тег последовательно
+            const tagPromises = data.tagNames.map(async (tagName) => {
+              const normalizedTagName = tagName.trim().toLowerCase();
+              if (!normalizedTagName) return;
+              
+              let tagId = tagMap.get(normalizedTagName);
+              if (!tagId) {
+                // Создаем новый тег, если его нет (backend нормализует имя)
+                const newTag = await createTag(normalizedTagName);
+                tagId = newTag.tag_id;
+              }
+              
+              // Связываем тег с задачей
+              try {
+                await addTagToTask(newTask.task_id, tagId);
+              } catch {
+                // Игнорируем ошибку, если связь уже существует (backend возвращает существующую связь)
+                // Ошибка может быть только если задача или тег не найдены
+              }
+            });
+            
+            // Ждем завершения всех операций с тегами
+            await Promise.all(tagPromises);
+          }
+          
+          // Перезагружаем задачи, чтобы получить их с тегами
+          await loadTasks();
+        }
       } catch (error) {
-        console.error('Ошибка при создании задачи:', error);
-        alert('Не удалось создать задачу. Проверьте консоль для подробностей.');
+        console.error('Ошибка при создании/обновлении задачи:', error);
+        alert(`Не удалось ${taskId ? 'обновить' : 'создать'} задачу. Проверьте консоль для подробностей.`);
       }
     } else {
       // Если пользователь не зарегистрирован - сохраняем локально
-      const newTask: Task = {
-        task_id: generateLocalTaskId(),
-        user_id: 0,
-        title: data.title,
-        description: data.description || null,
-        category_id: null,
-        priority: data.priority || null,
-        deadline: data.deadline || null,
-        is_repeating: data.is_repeating || false,
-        repeat_interval: data.repeat_interval || null,
-        status: TaskStatus.active,
-        is_favorite: data.is_favorite || false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        completed_at: null,
-      };
-      const updatedTasks = [...tasks, newTask];
-      setTasks(updatedTasks);
+      if (taskId) {
+        // Обновление локальной задачи
+        const updatedTasks = tasks.map(t =>
+          t.task_id === taskId
+            ? {
+                ...t,
+                title: data.title,
+                description: data.description || null,
+                priority: data.priority || null,
+                deadline: data.deadline || null,
+                is_repeating: data.is_repeating || false,
+                repeat_interval: data.repeat_interval || null,
+                is_favorite: data.is_favorite || false,
+                updated_at: new Date().toISOString(),
+              }
+            : t
+        );
+        setTasks(updatedTasks);
+      } else {
+        // Создание новой локальной задачи
+        const newTask: Task = {
+          task_id: generateLocalTaskId(),
+          user_id: 0,
+          title: data.title,
+          description: data.description || null,
+          category_id: null,
+          priority: data.priority || null,
+          deadline: data.deadline || null,
+          is_repeating: data.is_repeating || false,
+          repeat_interval: data.repeat_interval || null,
+          status: TaskStatus.active,
+          is_favorite: data.is_favorite || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          completed_at: null,
+        };
+        const updatedTasks = [...tasks, newTask];
+        setTasks(updatedTasks);
+      }
       // Локальные задачи НЕ сохраняются - они только в памяти текущей сессии
     }
   };
@@ -235,12 +400,6 @@ function App() {
     }
   };
 
-  const clearFilters = () => {
-    setFilterStatus(null);
-    setFilterPriority(null);
-    setFilterFavorite(false);
-    setFilterView('all');
-  };
 
   // Функции для фильтрации задач
   const getTodayDate = () => {
@@ -273,32 +432,100 @@ function App() {
   };
 
   const filteredTasksByView = tasks.filter(task => {
+    // Фильтрация по поисковому запросу (обычный поиск)
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      // Проверяем, это поиск по тегу (#тег) или обычный поиск
+      const isTagSearch = query.startsWith('#');
+      const searchTerm = isTagSearch ? query.slice(1).trim() : query;
+      
+      if (isTagSearch && searchTerm) {
+        // Поиск только по тегам
+        const matchesTags = task.tags?.some(tag => 
+          tag.name.toLowerCase().includes(searchTerm)
+        ) || false;
+        if (!matchesTags) {
+          return false;
+        }
+      } else if (searchTerm) {
+        // Обычный поиск по названию и описанию
+        const matchesTitle = task.title.toLowerCase().includes(searchTerm);
+        const matchesDescription = task.description?.toLowerCase().includes(searchTerm) || false;
+        if (!matchesTitle && !matchesDescription) {
+          return false;
+        }
+      }
+    }
+    
+    // Фильтрация по выбранным тегам
+    if (selectedTags.length > 0) {
+      const taskTagNames = task.tags?.map(t => t.name.toLowerCase()) || [];
+      const hasAllSelectedTags = selectedTags.every(selectedTag => 
+        taskTagNames.includes(selectedTag.toLowerCase())
+      );
+      if (!hasAllSelectedTags) {
+        return false;
+      }
+    }
+    
     if (filterView === 'inbox') {
-      // Входящее: только задачи без категории (созданные во входящих)
+      // Входящее: только задачи без категории И без deadline (созданные во входящих)
+      // Задачи с deadline попадают в "Сегодня", "Предстоящее" или "Все задачи", но не во "Входящие"
       // Дополнительно проверяем, что это задачи текущего пользователя
       if (currentUser && task.user_id !== currentUser.user_id) {
         return false;
       }
-      return task.category_id === null;
+      // Входящие: задачи без категории и без deadline
+      return task.category_id === null && !task.deadline;
     }
     if (filterView === 'today') {
-      // Сегодня: задачи с дедлайном сегодня
+      // Сегодня: задачи с дедлайном сегодня (включая задачи из входящего, если у них есть deadline)
       if (!task.deadline) return false;
       const deadline = new Date(task.deadline);
       const today = getTodayDate();
       return formatDateKey(deadline) === formatDateKey(today);
     }
     if (filterView === 'upcoming') {
-      // Предстоящее: задачи на текущей неделе
+      // Предстоящее: задачи на текущей неделе (включая задачи из входящего, если у них есть deadline)
       if (!task.deadline) return false;
       const deadline = new Date(task.deadline);
       const weekStart = getWeekStart();
       const weekEnd = getWeekEnd();
       return deadline >= weekStart && deadline <= weekEnd;
     }
-    // 'all' - все задачи
+    if (filterView === 'all') {
+      // Все задачи: все задачи пользователя
+      if (currentUser && task.user_id !== currentUser.user_id) {
+        return false;
+      }
+      // Если есть активные фильтры (статус, приоритет, избранное), показываем все задачи включая входящее
+      if (filterStatus || filterPriority || filterFavorite) {
+        return true;
+      }
+      // Без фильтров: показываем задачи с категориями + все задачи из входящего с deadline (без фильтрации по датам)
+      if (task.category_id !== null) {
+        return true; // Задачи с категориями всегда показываем
+      }
+      // Задачи из входящего показываем если у них есть deadline (любой, не только сегодня или на неделе)
+      if (task.category_id === null && task.deadline) {
+        return true; // Все задачи из входящего с deadline, независимо от даты
+      }
+      // Остальные задачи из входящего без deadline не показываем
+      return false;
+    }
     return true;
   });
+
+  const handleUserLoggedIn = async (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    setShowLogin(false);
+    // После входа очищаем локальные задачи и загружаем задачи пользователя из БД
+    setTasks([]);
+    await loadTasks();
+    // Загружаем настройки пользователя
+    await loadUserPreferences(user.user_id);
+  };
 
   const handleUserRegistered = async (user: User) => {
     setCurrentUser(user);
@@ -327,11 +554,28 @@ function App() {
     }
   };
 
+  if (showLogin) {
+    return (
+      <LoginPage
+        onSuccess={handleUserLoggedIn}
+        onCancel={() => setShowLogin(false)}
+        onSwitchToRegister={() => {
+          setShowLogin(false);
+          setShowRegister(true);
+        }}
+      />
+    );
+  }
+
   if (showRegister) {
     return (
       <RegisterPage
         onSuccess={handleUserRegistered}
         onCancel={() => setShowRegister(false)}
+        onSwitchToLogin={() => {
+          setShowRegister(false);
+          setShowLogin(true);
+        }}
       />
     );
   }
@@ -347,10 +591,64 @@ function App() {
     );
   }
 
-  const activeTasks = tasks.filter(t => t.status === 'active' || t.status === 'in_progress').length;
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
-  const favoriteTasks = tasks.filter(t => t.is_favorite).length;
-  const totalTasks = tasks.length;
+  // Счетчики для боковой панели
+  const activeTasks = tasks.filter(t => {
+    if (currentUser && t.user_id !== currentUser.user_id) return false;
+    if (t.category_id === null) return false; // Исключаем входящее
+    return t.status === 'active' || t.status === 'in_progress';
+  }).length;
+  
+  // Завершенные: все задачи (включая входящее), так как фильтр показывает все
+  const completedTasks = tasks.filter(t => {
+    if (currentUser && t.user_id !== currentUser.user_id) return false;
+    return t.status === 'completed';
+  }).length;
+  
+  // Избранные: все задачи (включая входящее), но исключаем завершенные
+  const favoriteTasks = tasks.filter(t => {
+    if (currentUser && t.user_id !== currentUser.user_id) return false;
+    if (t.status === 'completed') return false; // Исключаем завершенные
+    return t.is_favorite;
+  }).length;
+  
+  // Все задачи: используем точно такую же логику, что и в фильтре filteredTasksByView для filterView === 'all'
+  // Считаем задачи, которые будут показаны во вкладке "Все задачи" БЕЗ дополнительных фильтров и поиска
+  const totalTasks = tasks.filter(t => {
+    // Проверка пользователя (как в фильтре filterView === 'all')
+    if (currentUser && t.user_id !== currentUser.user_id) {
+      return false;
+    }
+    
+    // Без дополнительных фильтров (filterStatus, filterPriority, filterFavorite):
+    // Показываем задачи с категориями + все задачи из входящего с deadline (без фильтрации по датам)
+    // Это точно такая же логика, как в блоке filterView === 'all' в filteredTasksByView
+    
+    // Задачи с категориями всегда показываем
+    if (t.category_id !== null) {
+      return true;
+    }
+    
+    // Задачи из входящего показываем если у них есть deadline (любой, не только сегодня или на неделе)
+    if (t.category_id === null && t.deadline) {
+      return true; // Все задачи из входящего с deadline, независимо от даты
+    }
+    
+    // Остальные задачи из входящего без deadline не учитываем
+    return false;
+  }).length;
+
+  // Подсчет просроченных задач (пересчитывается при каждом рендере и каждую минуту)
+  const overdueTasks = tasks.filter(task => {
+    // Пропускаем завершенные задачи
+    if (task.status === 'completed') return false;
+    // Проверяем, что есть deadline
+    if (!task.deadline) return false;
+    // Проверяем, что deadline в прошлом
+    const deadline = new Date(task.deadline);
+    const today = getTodayDate();
+    deadline.setHours(0, 0, 0, 0);
+    return deadline < today;
+  }).length;
 
   return (
     <div className="todoist-app">
@@ -383,7 +681,7 @@ function App() {
             <span>Входящее</span>
             <span className="nav-count">{tasks.filter(t => {
               if (currentUser && t.user_id !== currentUser.user_id) return false;
-              return t.category_id === null;
+              return t.category_id === null && !t.deadline;
             }).length}</span>
           </button>
 
@@ -442,7 +740,7 @@ function App() {
 
           {currentUser && (
             <button 
-              className={`nav-item ${filterView === 'notifications' ? 'active' : ''}`}
+              className={`nav-item nav-item-notifications ${filterView === 'notifications' ? 'active' : ''}`}
               onClick={() => {
                 setFilterView('notifications');
                 setFilterStatus(null);
@@ -457,6 +755,7 @@ function App() {
                 </svg>
               </span>
               <span>Уведомления</span>
+              <span className="nav-count">{overdueTasks}</span>
             </button>
           )}
 
@@ -501,7 +800,10 @@ function App() {
           <button 
             className={`nav-item ${filterView === 'all' && !filterStatus && !filterPriority && !filterFavorite ? 'active' : ''}`}
             onClick={() => {
-              clearFilters();
+              setFilterView('all');
+              setFilterStatus(null);
+              setFilterPriority(null);
+              setFilterFavorite(false);
             }}
           >
             <span className="nav-icon">
@@ -533,7 +835,7 @@ function App() {
               </button>
             ) : (
               <button 
-                onClick={() => setShowRegister(true)} 
+                onClick={() => setShowLogin(true)} 
                 className="nav-item add-user-btn"
               >
                 <span className="nav-icon">
@@ -542,8 +844,7 @@ function App() {
                     <path d="M6 21C6 17.6863 8.68629 15 12 15C15.3137 15 18 17.6863 18 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                 </span>
-                <span>Гость</span>
-                <span style={{ marginLeft: '8px', fontSize: '12px' }}>+</span>
+                <span>Войти</span>
               </button>
             )}
             
@@ -589,6 +890,147 @@ function App() {
 
       {/* Основной контент */}
       <main className="main-content">
+        {/* Поисковая строка */}
+        <div className="search-container" style={{ 
+          padding: '16px 24px', 
+          borderBottom: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-primary, #ffffff)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '500px' }}>
+              <svg 
+                width="18" 
+                height="18" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                style={{ 
+                  position: 'absolute', 
+                  left: '12px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)',
+                  color: '#6b7280'
+                }}
+              >
+                <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
+                <path d="M21 21L16.65 16.65" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowTagSuggestions(e.target.value.startsWith('#') && e.target.value.length > 1);
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = '#ea580c';
+                    if (searchQuery.startsWith('#') && searchQuery.length > 1) {
+                      setShowTagSuggestions(true);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = '#e0e0e0';
+                    // Задержка для обработки клика по предложению
+                    setTimeout(() => setShowTagSuggestions(false), 200);
+                  }}
+                  placeholder="Поиск задач... (используйте # для поиска по тегам)"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px 10px 40px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+                {/* Выпадающее меню с тегами */}
+                {showTagSuggestions && filteredTagSuggestions.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'white',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 1000,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                  }}>
+                    {filteredTagSuggestions.map(tag => (
+                      <button
+                        key={tag.tag_id}
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery(`#${tag.name}`);
+                          setShowTagSuggestions(false);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          textAlign: 'left',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#333'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        #{tag.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Выбранные теги */}
+            {selectedTags.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {selectedTags.map((tag, index) => (
+                  <span 
+                    key={index}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '6px 10px',
+                      backgroundColor: '#ea580c',
+                      color: 'white',
+                      borderRadius: '16px',
+                      fontSize: '12px',
+                      gap: '6px'
+                    }}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTags(selectedTags.filter(t => t !== tag))}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
         {filterView !== 'inbox' && filterView !== 'notifications' && (
           <header className="main-header">
             <div className="header-title">
@@ -727,6 +1169,7 @@ function App() {
                   filterFavorite={filterFavorite}
                   isInboxView={true}
                   dateFormat={dateFormat}
+                  onTagClick={handleTagClick}
                 />
               </div>
             </div>
@@ -741,6 +1184,10 @@ function App() {
               filterPriority={filterPriority}
               filterFavorite={filterFavorite}
               dateFormat={dateFormat}
+              onTagClick={handleTagClick}
+              onEdit={(task: Task) => {
+                setEditingTask(task);
+              }}
             />
           ) : (
             <div className="task-list-view">
@@ -766,6 +1213,10 @@ function App() {
                 filterPriority={filterPriority}
                 filterFavorite={filterFavorite}
                 dateFormat={dateFormat}
+                onTagClick={handleTagClick}
+                onEdit={(task: Task) => {
+                  setEditingTask(task);
+                }}
               />
 
               {/* Модальное окно для добавления задачи */}
@@ -776,6 +1227,22 @@ function App() {
                   handleAdd(taskData);
                   setShowAddModal(false);
                 }}
+                dateFormat={dateFormat}
+              />
+
+              {/* Модальное окно для редактирования задачи */}
+              <TaskModal
+                isOpen={editingTask !== null}
+                onClose={() => setEditingTask(null)}
+                onSubmit={(taskData: CreateTaskData) => {
+                  if (editingTask) {
+                    handleAdd(taskData, editingTask.task_id);
+                  } else {
+                    handleAdd(taskData);
+                  }
+                  setEditingTask(null);
+                }}
+                initialTask={editingTask}
                 dateFormat={dateFormat}
               />
             </div>

@@ -4,6 +4,8 @@ import type { CreateTaskData } from '../types/task';
 import './InlineTaskForm.css';
 
 import type { Task } from '../types/task';
+import type { Tag } from '../api/tagsAPI';
+import { getTags, createTag } from '../api/tagsAPI';
 
 interface InlineTaskFormProps {
   onSubmit: (data: CreateTaskData, taskId?: number) => void;
@@ -38,9 +40,14 @@ export function InlineTaskForm({ onSubmit, onCancel, initialTask }: InlineTaskFo
     return '';
   });
   const [showMenu, setShowMenu] = useState(false);
+  const [tags, setTags] = useState<string[]>(initialTask?.tags?.map(t => t.name) || []);
+  const [tagInput, setTagInput] = useState('');
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
   const dateTimeButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
 
   // Инициализация deadlineDisplay при монтировании или изменении deadline
@@ -49,6 +56,53 @@ export function InlineTaskForm({ onSubmit, onCancel, initialTask }: InlineTaskFo
       setDeadlineDisplay(formatToDDMMYYYY(deadline));
     }
   }, [deadline]);
+
+  // Загрузка доступных тегов
+  useEffect(() => {
+    getTags().then(setAvailableTags).catch(console.error);
+  }, []);
+
+  // Добавление тега
+  const handleAddTag = async (tagName: string) => {
+    const trimmedName = tagName.trim().toLowerCase();
+    if (!trimmedName || tags.includes(trimmedName)) return;
+    
+    try {
+      // Создаем или находим тег (backend нормализует имя)
+      const tag = await createTag(trimmedName);
+      setTags([...tags, tag.name.toLowerCase()]);
+      setTagInput('');
+      setShowTagSuggestions(false);
+      
+      // Обновляем список доступных тегов
+      const updatedTags = await getTags();
+      setAvailableTags(updatedTags);
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+
+  // Удаление тега
+  const handleRemoveTag = (tagName: string) => {
+    setTags(tags.filter(t => t !== tagName));
+  };
+
+  // Обработка ввода тега
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (tagInput.trim()) {
+        handleAddTag(tagInput);
+      }
+    } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      handleRemoveTag(tags[tags.length - 1]);
+    }
+  };
+
+  // Фильтрация предложений тегов
+  const filteredTagSuggestions = availableTags.filter(
+    tag => tag.name.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(tag.name)
+  );
 
   // Функция для конвертации YYYY-MM-DD в DD/MM/YYYY
   const formatToDDMMYYYY = (isoDate: string): string => {
@@ -524,6 +578,7 @@ export function InlineTaskForm({ onSubmit, onCancel, initialTask }: InlineTaskFo
       is_favorite: isFavorite ? true : undefined,
       reminder_time: reminderTime || undefined,
       timer_duration: timerDuration,
+      tagNames: tags.length > 0 ? tags : undefined,
     };
 
     onSubmit(submitData, initialTask?.task_id);
@@ -539,6 +594,8 @@ export function InlineTaskForm({ onSubmit, onCancel, initialTask }: InlineTaskFo
     setReminderTime('');
     setTimerHours('');
     setTimerMinutes('');
+    setTags([]);
+    setTagInput('');
     onCancel();
   };
 
@@ -692,6 +749,97 @@ export function InlineTaskForm({ onSubmit, onCancel, initialTask }: InlineTaskFo
               onClose={() => setShowDateTimeMenu(false)}
             />
           )}
+
+          {/* Поле для тегов */}
+          <div className="tags-input-container" style={{ marginTop: '12px', position: 'relative' }}>
+            <div className="tags-display" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+              {tags.map((tag, index) => (
+                <span key={index} className="tag-badge" style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  padding: '4px 8px', 
+                  backgroundColor: '#f3f4f6', 
+                  borderRadius: '12px', 
+                  fontSize: '12px',
+                  gap: '6px'
+                }}>
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(tag)}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              ref={tagInputRef}
+              type="text"
+              value={tagInput}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setShowTagSuggestions(e.target.value.length > 0);
+              }}
+              onKeyDown={handleTagInputKeyDown}
+              onFocus={() => setShowTagSuggestions(tagInput.length > 0)}
+              placeholder="Добавить тег (Enter или запятая)"
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}
+            />
+            {showTagSuggestions && filteredTagSuggestions.length > 0 && (
+              <div className="tag-suggestions" style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                border: '1px solid #e0e0e0',
+                borderRadius: '6px',
+                marginTop: '4px',
+                maxHeight: '150px',
+                overflowY: 'auto',
+                zIndex: 1000,
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}>
+                {filteredTagSuggestions.map(tag => (
+                  <button
+                    key={tag.tag_id}
+                    type="button"
+                    onClick={() => handleAddTag(tag.name)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      textAlign: 'left',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '14px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="expanded-form-footer">
             <div className="expanded-form-actions">
