@@ -50,4 +50,3 @@ export interface UpdateTaskData {
   status?: TaskStatus | null;
   is_favorite?: boolean;
 }
-

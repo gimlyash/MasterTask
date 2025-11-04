@@ -169,6 +169,14 @@ async def update_task(task_id: int, task_update: TaskUpdate, user_id: int = 1, d
             if key in ('priority', 'status') and value is not None:
                 value = value.value if hasattr(value, 'value') else value
             setattr(task, key, value)
+        
+        # Устанавливаем completed_at при выполнении задачи
+        if task_update.status and task.status == StatusEnum.completed.value and old_status != StatusEnum.completed.value:
+            task.completed_at = datetime.now(timezone.utc)
+        # Сбрасываем completed_at при отмене выполнения
+        elif task_update.status and task.status != StatusEnum.completed.value and old_status == StatusEnum.completed.value:
+            task.completed_at = None
+        
         task.updated_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(task)

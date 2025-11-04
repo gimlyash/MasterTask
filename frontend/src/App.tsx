@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { TaskModal } from './components/TaskModal';
 import { Settings } from './components/Settings';
 import { Notifications } from './components/Notifications';
+import { Statistics } from './components/Statistics';
 import type { Task } from './api/taskAPI';
 import type { User } from './api/userAPI';
 import { getPreferences } from './api/userAPI';
@@ -27,6 +28,7 @@ function App() {
   const [viewMode, setViewMode] = useState<'week' | 'list'>('week');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showStatistics, setShowStatistics] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -591,6 +593,16 @@ function App() {
     );
   }
 
+  if (showStatistics && currentUser) {
+    return (
+      <Statistics
+        userId={currentUser.user_id}
+        tasks={tasks.filter(t => t.user_id === currentUser.user_id)}
+        onClose={() => setShowStatistics(false)}
+      />
+    );
+  }
+
   // Счетчики для боковой панели
   const activeTasks = tasks.filter(t => {
     if (currentUser && t.user_id !== currentUser.user_id) return false;
@@ -867,6 +879,21 @@ function App() {
                 </button>
                 <button 
                   onClick={() => {
+                    setShowStatistics(true);
+                    setShowUserMenu(false);
+                  }}
+                  className="user-menu-item"
+                >
+                  <span className="nav-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 3V21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M7 16L11 10L15 14L21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                  <span>Статистика</span>
+                </button>
+                <button 
+                  onClick={() => {
                     setCurrentUser(null);
                     localStorage.removeItem('currentUser');
                     setTasks([]);
@@ -897,7 +924,7 @@ function App() {
           backgroundColor: 'var(--bg-primary, #ffffff)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '500px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', flex: '1', minWidth: '200px', maxWidth: '500px', gap: '8px' }}>
               <svg 
                 width="18" 
                 height="18" 
@@ -905,11 +932,8 @@ function App() {
                 fill="none" 
                 xmlns="http://www.w3.org/2000/svg"
                 style={{ 
-                  position: 'absolute', 
-                  left: '12px', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)',
-                  color: '#6b7280'
+                  color: '#6b7280',
+                  flexShrink: 0
                 }}
               >
                 <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2"/>
@@ -930,18 +954,19 @@ function App() {
                     }
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = '#e0e0e0';
+                    e.target.style.borderColor = '#f0f0f0';
                     // Задержка для обработки клика по предложению
                     setTimeout(() => setShowTagSuggestions(false), 200);
                   }}
                   placeholder="Поиск задач... (используйте # для поиска по тегам)"
                   style={{
                     width: '100%',
-                    padding: '10px 12px 10px 40px',
-                    border: '1px solid #e0e0e0',
+                    padding: '10px 12px',
+                    border: '1px solid #f0f0f0',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    outline: 'none'
+                    outline: 'none',
+                    backgroundColor: '#f3f4f6'
                   }}
                 />
                 {/* Выпадающее меню с тегами */}
@@ -951,14 +976,14 @@ function App() {
                     top: '100%',
                     left: 0,
                     right: 0,
-                    backgroundColor: 'white',
-                    border: '1px solid #e0e0e0',
+                    backgroundColor: 'var(--bg-primary, #ffffff)',
+                    border: '1px solid #e5e7eb',
                     borderRadius: '8px',
                     marginTop: '4px',
                     maxHeight: '200px',
                     overflowY: 'auto',
                     zIndex: 1000,
-                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
                   }}>
                     {filteredTagSuggestions.map(tag => (
                       <button
