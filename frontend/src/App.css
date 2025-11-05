@@ -1388,7 +1388,7 @@
 }
 
 .task-description {
-  color: var(--text-secondary, #6b7280);
+  color: white;
   font-size: 12px;
   line-height: 1.5;
   margin: 6px 0;
@@ -1522,6 +1522,10 @@
   color: #ffffff;
 }
 
+[data-theme="dark"] .favorite-btn svg.star-icon {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+}
+
 .favorite-btn svg.star-icon {
   animation: starPulse 2s ease-in-out infinite;
   transform-origin: center;
@@ -1533,6 +1537,10 @@
 
 .favorite-btn.active svg.star-icon {
   animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
+}
+
+[data-theme="dark"] .favorite-btn.active svg.star-icon {
+  animation: starFill 0.4s ease-out forwards, starGlowDark 1.5s ease-in-out infinite 0.4s;
 }
 
 /* Звездочка для inbox view */
@@ -1568,6 +1576,10 @@
   color: #ffffff;
 }
 
+[data-theme="dark"] .inbox-favorite-btn svg.star-icon {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+}
+
 .inbox-favorite-btn svg.star-icon {
   animation: starPulse 2s ease-in-out infinite;
   transform-origin: center;
@@ -1581,6 +1593,10 @@
   animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
 }
 
+[data-theme="dark"] .inbox-favorite-btn.active svg.star-icon {
+  animation: starFill 0.4s ease-out forwards, starGlowDark 1.5s ease-in-out infinite 0.4s;
+}
+
 /* Звездочка для избранных задач во входящих */
 .inbox-task-bar .star-icon.filled {
   animation: starFill 0.4s ease-out forwards, starGlow 1.5s ease-in-out infinite 0.4s;
@@ -1589,6 +1605,7 @@
 
 [data-theme="dark"] .inbox-task-bar .star-icon.filled {
   color: #ffffff;
+  animation: starFill 0.4s ease-out forwards, starGlowDark 1.5s ease-in-out infinite 0.4s;
 }
 
 @keyframes starPulse {
@@ -1642,6 +1659,17 @@
   }
   50% {
     filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.5));
+    transform: scale(1.05);
+  }
+}
+
+@keyframes starGlowDark {
+  0%, 100% {
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.6));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.9));
     transform: scale(1.05);
   }
 }

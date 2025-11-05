@@ -43,13 +43,13 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-color, #ea580c);
+  background: #dc2626;
   border-radius: 6px;
   border: 2px solid var(--bg-secondary, #f3f4f6);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-hover, #c2410c);
+  background: #b91c1c;
 }
 
 ::-webkit-scrollbar-button {
@@ -59,7 +59,7 @@ body {
 /* Для Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-color, #ea580c) var(--bg-secondary, #f3f4f6);
+  scrollbar-color: #dc2626 var(--bg-secondary, #f3f4f6);
 }
 
 [data-theme="dark"] * {
